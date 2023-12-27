@@ -13,6 +13,7 @@ hnswlib = "^0.8.0"
 uvicorn = {extras = ["standard"], version = "^0.25.0"}
 sentence-transformers = "^2.2.2"
 fastapi = "^0.105.0"
+matplotlib = "^3.8.2"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -125,7 +125,7 @@ class VectorDB:
         embeddings = model.encode(texts, show_progress_bar=True)
         return embeddings
 
-    def sample_results(self, search_results: tuple[str, float], k: 5) -> list[str]:
+    def sample_results(self, search_results: tuple[Any, float], k: 5) -> list[str]:
         """Create a random sample of the results weighted with their distance to the search query."""
 
         if not search_results:
@@ -135,14 +135,16 @@ class VectorDB:
         weights = [result[1] for result in search_results]
         normalized_weights = normalize_weights(weights)
 
-        return list(
+        idxs = list(
             np.random.choice(
-                [result[0] for result in search_results],
+                range(len(search_results)),
                 size=k,
                 replace=False,
                 p=normalized_weights,
             )
         )
+
+        return [result for idx, result in enumerate(search_results) if idx in idxs]
 
     @classmethod
     def load(self, filepath: Path):

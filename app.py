@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 
 config = load_config(Path("configs/config.yaml"))
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+model = SentenceTransformer("thenlper/gte-large")
 
 
 class Request(BaseModel):
@@ -18,6 +18,7 @@ class Request(BaseModel):
     k: int = Field(default=5)
     threshold: float = Field(default=0.4)
     lasso_threshold: float = Field(default=0.1)
+    sample_results: bool = Field(default=False)
 
 
 class GetCardsResponse(BaseModel):
@@ -30,7 +31,7 @@ class UpdateCardsResponse(BaseModel):
     number_of_cards: int
 
 
-db = {
+db: dict[str, VectorDB] = {
     "card": VectorDB.load(config.get("card_db_file", None)),
     # "rule": VectorDB.load(config.get("rule_db_file", None)),
 }
@@ -41,14 +42,21 @@ app = FastAPI()
 
 @app.post("/cards/")
 async def get_cards(request: Request) -> list[GetCardsResponse]:
-    card_db = db["card"]
-    query_result = card_db.query(
+    if request.sample_results:
+        k = request.k * 2
+    else:
+        k = request.k
+
+    query_result = db["card"].query(
         text=request.text,
-        k=request.k,
+        k=k,
         threshold=request.threshold,
         lasso_threshold=request.lasso_threshold,
         model=model,
     )
+    if request.sample_results:
+        query_result = db["card"].sample_results(query_result, request.k)
+
     return [
         GetCardsResponse(card=result[0], distance=result[1]) for result in query_result
     ]
@@ -65,11 +73,4 @@ async def get_rules(request: Request) -> list[Rule]:
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="debug",
-        proxy_headers=True,
-        reload=True,
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug", proxy_headers=True)
