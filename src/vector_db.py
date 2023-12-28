@@ -48,7 +48,7 @@ class VectorDB:
         """Create the Search Graph.
 
         Parameters:
-            labels_and_embeddings: a list of tuples (label, vector)
+            embeddings_and_data: a list of tuples (vector, some_data_object)
             ef: parameter that controls speed/accuracy trade-off during the index construction
             M: parameter that defines the maximum number of outgoing connections in the graph
         """
@@ -70,16 +70,16 @@ class VectorDB:
 
         return
 
-    def add(self, labels_and_embeddings) -> None:
+    def add(self, embeddings_and_data) -> None:
         """Add labels and embeddings to the Search Graph."""
-        labels, embeddings = zip(*labels_and_embeddings)
+        embeddings, data = zip(*embeddings_and_data)
         old_index_size = self.graph.get_max_elements()
-        new_index_size = old_index_size + len(labels_and_embeddings)
+        new_index_size = old_index_size + len(embeddings_and_data)
         idxs = [old_index_size + i for i in range(len(embeddings))]
 
         self.graph.resize_index(new_index_size)
         self.graph.add_items(data=embeddings, ids=idxs)
-        self.ids_2_labels.update({idx: label for idx, label in zip(idxs, labels)})
+        self.ids_2_data.update({idx: d for idx, d in zip(idxs, data)})
 
     def query(
         self,
@@ -115,7 +115,6 @@ class VectorDB:
                     search_results.append((self.ids_2_data.get(idx, None), distance))
 
         search_results = sorted(search_results, key=lambda x: x[1])[:k]
-        print(search_results)
         return search_results
 
     def vectorize_texts(

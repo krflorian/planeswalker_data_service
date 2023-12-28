@@ -1,3 +1,4 @@
+# %%
 import uvicorn
 
 from pathlib import Path
@@ -32,10 +33,11 @@ class UpdateCardsResponse(BaseModel):
 
 
 db: dict[str, VectorDB] = {
-    "card": VectorDB.load(config.get("card_db_file", None)),
-    # "rule": VectorDB.load(config.get("rule_db_file", None)),
+    "card": VectorDB.load(config.get("cards_db_file", None)),
+    "rule": VectorDB.load(config.get("rules_db_file", None)),
 }
 
+# %%
 
 app = FastAPI()
 
@@ -62,14 +64,20 @@ async def get_cards(request: Request) -> list[GetCardsResponse]:
     ]
 
 
-@app.get("/update_cards/")
-async def update_cards() -> UpdateCardsResponse:
-    return
-
-
 @app.post("/rules/")
 async def get_rules(request: Request) -> list[Rule]:
-    return
+    query_result = db["rule"].query(
+        text=request.text,
+        k=request.k,
+        threshold=request.threshold,
+        lasso_threshold=request.lasso_threshold,
+        model=model,
+    )
+    rules = []
+    for rule, distance in query_result:
+        if rule not in rules:
+            rules.append(rule)
+    return rules
 
 
 if __name__ == "__main__":
