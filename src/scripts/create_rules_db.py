@@ -2,13 +2,13 @@
 from pathlib import Path
 import re
 import random
-import os
+from sentence_transformers import SentenceTransformer
+
+from src.vector_db import VectorDB
 from src.objects import Rule
 
-# os.chdir(r"/home/max/projects/planeswalker_companion")
 
-
-def load_rules(rules_file=Path("data/MagicCompRules.txt")):
+def load_rules(rules_file: Path = Path("data/rules/MagicCompRules.txt")) -> str:
     with open(rules_file, "r", encoding="utf-8") as f:
         text = f.read()
     return text
@@ -57,7 +57,7 @@ def extract_rules(text: str) -> list[str]:
                             examples = []
                         processed_rules.append(
                             Rule(
-                                text=rule,
+                                text=rule.strip(),
                                 rule_id=rule_id,
                                 chapter=chapter,
                                 subchapter=subchapter,
@@ -83,82 +83,41 @@ def extract_rules(text: str) -> list[str]:
     return processed_rules
 
 
-# %%
+if __name__ == "__main__":
+    # create variables
+    db_name = "rules_db_gte"
+    rules_text_file = Path("data/rules/MagicCompRules.txt")
+    rules_db_file = Path(f"data/artifacts/{db_name}.p")
 
-text = load_rules()
-rules = extract_rules(text)
+    # load model
+    model = SentenceTransformer(
+        "thenlper/gte-large"
+    )  # sentence-transformers/all-MiniLM-L6-v2
 
+    # load rules
+    text = load_rules(rules_text_file)
+    rules = extract_rules(text)
 
-# %%
-"""
-for rule in rules:
-    if rule.examples:
-    # if rule.chapter.startswith("Glossary"):
-    # if rule.subchapter is not None:
-        print(rule.chapter)
-        print(rule.subchapter)
-        print(rule.text)
-        print("examples:")
-        for example in rule.examples:
-            print(example)
-        print("____________")
+    # create rule texts
+    texts = []
+    for rule in rules:
+        text = ""
+        if rule.subchapter is not None:
+            text += rule.subchapter + " - "
+        text += rule.text
+        texts.append(text)
 
+    rules_db = VectorDB(
+        texts=texts,
+        data=rules,
+        model=model,
+    )
 
-filtered_rules = [rule for rule in rules if len(rule) > 1000]
-print(len(filtered_rules))
-i = 10
-for _ in range(min(i, len(filtered_rules))):
-    print("_______________")
-    rule = random.choice(filtered_rules)
-    print(rule.chapter)
-    print("character length: ", len(rule))
-    print("~token length: ", len(rule.text.split()) // 2)
-    print(rule.text)
-"""
+    # add vectors for examples
+    for rule in rules:
+        if not rule.examples:
+            continue
 
-
-# %%
-# check rules
-import random
-import matplotlib.pyplot as plt
-
-plt.hist([len(rule) for rule in rules])
-plt.title("rule length")
-plt.show()
-
-
-# %%
-# load model
-from sentence_transformers import SentenceTransformer
-
-model = SentenceTransformer(
-    "thenlper/gte-large"
-)  # sentence-transformers/all-MiniLM-L6-v2
-model
-
-# %%
-# create vector db
-from src.vector_db import VectorDB
-
-# add rules
-texts = []
-for rule in rules:
-    text = ""
-    if rule.subchapter is not None:
-        text += rule.subchapter + " - "
-    text += rule.text
-    texts.append(text)
-
-assert len(texts) == len(rules)
-rules_db = VectorDB(
-    texts=texts,
-    data=rules,
-    model=model,
-)
-
-# add example vectors
-for rule in rules:
-    if rule.examples:
         embeddings_and_data = rules_db.get_embeddings(
             texts=rule.examples,
             data=[rule for _ in range(len(rule.examples))],
@@ -167,40 +126,5 @@ for rule in rules:
 
         rules_db.add(embeddings_and_data)
 
-
-# %%
-# tests
-TEST_CASES_KEYWORDS = [
-    "what happens if i attack with a 1/1 deathouch creature and my opponent blocks with a 2/2 token?",
-    "what happens if i attack with a 1/1 first strike creature and my opponent blocks with a 3/1 creature?",
-    "what happens if i attack with a 5/5 creature with trample and my opponent blocks with a 1/1 creature?",
-    "what happens if i attack with a 5/5 creature with trample and my opponent blocks with a 5/1 creature?",
-    "what happens if i attack with a 5/5 creature with trample and my opponent blocks with a 1/1 creature with deathtouch?",
-]
-
-
-for question in TEST_CASES_KEYWORDS:
-    results = rules_db.query(
-        question, model=model, k=10, threshold=0.2, lasso_threshold=0.02
-    )
-    print("______________")
-    print("______________")
-    print("question:", question)
-    print()
-    print("received chunks: ", len(results))
-    print("______________")
-
-    for rule, distance in results:
-        print(rule.chapter, "-", rule.subchapter)
-        print(rule.rule_id, ": distance = ", distance)
-        print(rule.text)
-        print("____________")
-
-
-# %%
-# save db
-from pathlib import Path
-
-db_name = "rules_db_gte"
-rules_db_file = Path(f"data/{db_name}.p")
-rules_db.dump(rules_db_file)
+    # save rules db
+    rules_db.dump(rules_db_file)

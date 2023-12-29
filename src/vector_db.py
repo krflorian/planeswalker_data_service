@@ -1,9 +1,8 @@
+import re
 from typing import Any
 import hnswlib
 import pickle
 import numpy as np
-from tqdm import tqdm
-import re
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
@@ -21,8 +20,6 @@ class VectorDB:
         self.graph: hnswlib.Index = None
         self.ids_2_data: dict[int, str] = None
 
-        assert len(texts) == len(data), "texts and data must be coindexed"
-
         embeddings_and_data = self.get_embeddings(texts, data, model)
         self.create_graph(embeddings_and_data=embeddings_and_data)
 
@@ -30,7 +27,9 @@ class VectorDB:
         self, texts: list[str], data: list[Any], model: SentenceTransformer
     ) -> tuple[str, np.ndarray]:
         """texts and data must be coindexed"""
-        logger.info(f"Vector DB: adding {len(texts)} embeddings")
+        assert len(texts) == len(data), "texts and data must be coindexed"
+
+        logger.info(f"creating {len(texts)} embeddings")
         embeddings = self.vectorize_texts(texts, model)
 
         embeddings_and_data = []
@@ -72,7 +71,10 @@ class VectorDB:
 
     def add(self, embeddings_and_data) -> None:
         """Add labels and embeddings to the Search Graph."""
+
         embeddings, data = zip(*embeddings_and_data)
+        logger.info(f"adding {len(data)} embeddings")
+
         old_index_size = self.graph.get_max_elements()
         new_index_size = old_index_size + len(embeddings_and_data)
         idxs = [old_index_size + i for i in range(len(embeddings))]
@@ -86,7 +88,7 @@ class VectorDB:
         text: str,
         model: SentenceTransformer,
         k: int = 5,
-        threshold=0.2,
+        threshold: float = 0.2,
         lasso_threshold: int = 0.02,
         split_pattern: str = "\.|\?",
     ) -> list[str, float]:
