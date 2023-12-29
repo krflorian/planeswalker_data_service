@@ -2,6 +2,7 @@
 from pathlib import Path
 import re
 import random
+import wikipedia
 from sentence_transformers import SentenceTransformer
 
 from src.vector_db import VectorDB
@@ -52,7 +53,6 @@ def extract_rules(text: str) -> list[str]:
                             rule = rule.split("Example:")
                             examples = rule[1:]
                             rule = rule[0]
-                            print(examples[0])
                         else:
                             examples = []
                         processed_rules.append(
@@ -76,11 +76,38 @@ def extract_rules(text: str) -> list[str]:
 
     rule = random.choice(processed_rules)
     print("random rule:")
-    print(rule.rule_id)
     print(rule.chapter)
+    print(rule.rule_id)
     print(rule.text)
 
     return processed_rules
+
+
+def parse_keywords_from_wikipedia():
+    # Specify the title of the Wikipedia page
+    wiki = wikipedia.page("List of Magic: The Gathering keywords")
+
+    # Extract the plain text content of the page, excluding images, tables, and other data.
+    text = wiki.content
+    wiki_pattern = r"(=== [^=]+ ===)"
+    processed_text = re.split(wiki_pattern, text)
+
+    # add rules
+    rules = []
+    for text in processed_text[1:]:
+        if text.startswith("==="):
+            keyword = text.replace("===", "")
+            keyword = keyword.strip()
+        else:
+            rule = Rule(text=text, rule_id=keyword, chapter="Keywords")
+            rules.append(rule)
+
+    rule = random.choice(rules)
+    print("random wikipedia keyword:")
+    print(rule.chapter)
+    print(rule.rule_id)
+    print(rule.text)
+    return rules
 
 
 if __name__ == "__main__":
@@ -97,6 +124,7 @@ if __name__ == "__main__":
     # load rules
     text = load_rules(rules_text_file)
     rules = extract_rules(text)
+    rules.extend(parse_keywords_from_wikipedia())
 
     # create rule texts
     texts = []
@@ -104,6 +132,8 @@ if __name__ == "__main__":
         text = ""
         if rule.subchapter is not None:
             text += rule.subchapter + " - "
+        if rule.chapter in ["Keywords", "Glossary"]:
+            text += rule.rule_id + " - "
         text += rule.text
         texts.append(text)
 
