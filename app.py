@@ -1,20 +1,28 @@
-# %%
 import uvicorn
-
 from pathlib import Path
-from src.objects import Card, Rule
-from src.util import load_config
-from src.vector_db import VectorDB
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 
-config = load_config(Path("configs/config.yaml"))
-model = SentenceTransformer("thenlper/gte-large")
+from src.objects import Card, Rule
+from src.util import load_config
+from src.vector_db import VectorDB
+
+config: dict = load_config(Path("configs/config.yaml"))
+model: SentenceTransformer = SentenceTransformer(
+    config.get("model_name", "thenlper/gte-large")
+)
+
+db: dict[str, VectorDB] = {
+    "card": VectorDB.load(config.get("cards_db_file", None)),
+    "rule": VectorDB.load(config.get("rules_db_file", None)),
+}
+
+app = FastAPI()
 
 
-class Request(BaseModel):
+class CardsRequest(BaseModel):
     text: str
     k: int = Field(default=5)
     threshold: float = Field(default=0.4)
@@ -22,33 +30,32 @@ class Request(BaseModel):
     sample_results: bool = Field(default=False)
 
 
+class RulesRequest(BaseModel):
+    text: str
+    k: int = Field(default=5)
+    threshold: float = Field(default=0.2)
+    lasso_threshold: float = Field(default=0.02)
+
+
 class GetCardsResponse(BaseModel):
     card: Card
     distance: float
 
 
-class UpdateCardsResponse(BaseModel):
-    updated: bool
-    number_of_cards: int
-
-
-db: dict[str, VectorDB] = {
-    "card": VectorDB.load(config.get("cards_db_file", None)),
-    "rule": VectorDB.load(config.get("rules_db_file", None)),
-}
-
-# %%
-
-app = FastAPI()
+class GetRulesResponse(BaseModel):
+    rule: Rule
+    distance: float
 
 
 @app.post("/cards/")
-async def get_cards(request: Request) -> list[GetCardsResponse]:
+async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
+    # when sampling retrieve more cards
     if request.sample_results:
         k = request.k * 2
     else:
         k = request.k
 
+    # query database
     query_result = db["card"].query(
         text=request.text,
         k=k,
@@ -65,7 +72,8 @@ async def get_cards(request: Request) -> list[GetCardsResponse]:
 
 
 @app.post("/rules/")
-async def get_rules(request: Request) -> list[Rule]:
+async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
+    # query database
     query_result = db["rule"].query(
         text=request.text,
         k=request.k,
@@ -73,11 +81,12 @@ async def get_rules(request: Request) -> list[Rule]:
         lasso_threshold=request.lasso_threshold,
         model=model,
     )
+    # filter unique rules
     rules = []
     for rule, distance in query_result:
         if rule not in rules:
-            rules.append(rule)
-    return rules
+            rules.append((rule, distance))
+    return [GetRulesResponse(rule=rule, distance=distance) for rule, distance in rules]
 
 
 if __name__ == "__main__":

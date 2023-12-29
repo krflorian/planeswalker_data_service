@@ -25,14 +25,14 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def get_logger(name="mtg-data-service"):
+def get_logger(name="mtg-data-service", logfile="data/logs/data_service_logs.log"):
     # logger
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
 
     # file handler
-    file_handler = logging.FileHandler("data/data_service_logs.log", mode="a")
+    file_handler = logging.FileHandler(logfile, mode="a")
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(CustomFormatter())
 
