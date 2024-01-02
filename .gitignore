@@ -160,7 +160,6 @@ cython_debug/
 #.idea/
 
 # project specific 
-config.yaml
 tryhard.py
 .venv
 *.code-workspace
