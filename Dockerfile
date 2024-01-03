@@ -1,17 +1,16 @@
 # 
 FROM python:3.9
+RUN pip install poetry==1.4.2
 
 # 
-WORKDIR /code
+WORKDIR /app
+COPY pyproject.toml poetry.lock app.py ./
+COPY ./src /app/src
+RUN touch README.md
 
 # 
-COPY ./requirements.txt /code/requirements.txt
-
-# 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
-
-# 
-COPY ./src /code/src
+RUN poetry config virtualenvs.create false
+RUN poetry install
 
 # 
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
