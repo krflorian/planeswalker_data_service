@@ -3,7 +3,7 @@
 This is an API build for [Nissa](https://github.com/krflorian/planeswalker_companion). 
 The Service uses FASTAPI and HNSWLIB to query cards data and rules regarding `Magic: The Gathering`. 
 
-## USAGE 
+## USAGE  
 
 1.  Start the Server 
 ```shell 
