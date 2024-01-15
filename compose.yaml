@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    image: data_service:latest
+    container_name: nissa
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
