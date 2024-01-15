@@ -2,4 +2,5 @@
 
 cards_db_file: "data/artifacts/card_db_gte.p"
 rules_db_file: "data/artifacts/rules_db_gte.p"
-model_name: "thenlper/gte-large"
+vector_model_name: "thenlper/gte-large"
+halucination_model_name: "vectara/hallucination_evaluation_model"

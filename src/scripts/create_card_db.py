@@ -1,6 +1,6 @@
 # %%
 from src.vector_db import VectorDB
-from src.objects import Card
+from src.objects import Card, Rule
 
 from tqdm import tqdm
 from pathlib import Path
@@ -67,6 +67,16 @@ def save_card_data(data: list[dict], all_cards_file: Path) -> None:
 def parse_card_data(data: list[dict]) -> list[Card]:
     cards = []
     for card_data in data:
+        rules = card_data.get("rulings", [])
+        rules = [
+            Rule(
+                text=text,
+                rule_id=str(idx),
+                chapter="Card Ruling",
+                subchapter=card_data.get("name"),
+            )
+            for idx, text in enumerate(rules)
+        ]
         cards.append(
             Card(
                 _id=card_data.get("id"),
@@ -80,7 +90,7 @@ def parse_card_data(data: list[dict]) -> list[Card]:
                 color_identity=card_data.get("color_identity", []),
                 keywords=card_data.get("keywords", []),
                 image_url=card_data["image_uris"].get("large"),
-                rulings=card_data.get("rulings", []),
+                rulings=rules,
             )
         )
 
@@ -90,7 +100,7 @@ def parse_card_data(data: list[dict]) -> list[Card]:
 def create_card_db(cards: list[Card]) -> VectorDB:
     texts, cards = [], []
     for card in cards:
-        texts.append(card.to_text(include_price=False, include_rulings=False))
+        texts.append(card.to_text(include_price=False))
         cards.append(card)
 
     card_db = VectorDB(
@@ -119,17 +129,23 @@ if __name__ == "__main__":
     cards = parse_card_data(data=data)
 
     # if update:
-    card_db = VectorDB.load(artifacts_path / f"{db_name}.p")
-    card_names_vectorized = [c.name for c in card_db.ids_2_data.values()]
-    cards_new = [c for c in cards if c.name not in card_names_vectorized]
-    texts, cards = [], []
-    for card in cards_new:
-        texts.append(card.to_text(include_price=False, include_rulings=False))
-        cards.append(card)
-    embeddings_and_data = card_db.get_embeddings(texts, cards, model)
-    card_db.add(embeddings_and_data)
-    # if new:
-    # TODO
+    try:
+        card_db = VectorDB.load(artifacts_path / f"{db_name}.p")
+        card_names_vectorized = [c.name for c in card_db.ids_2_data.values()]
+        cards_new = [c for c in cards if c.name not in card_names_vectorized]
+        texts, cards = [], []
+        for card in cards_new:
+            texts.append(card.to_text(include_price=False))
+            cards.append(card)
+        embeddings_and_data = card_db.get_embeddings(texts, cards, model)
+        card_db.add(embeddings_and_data)
+    except:
+        cards_new = cards[:]
+        texts, cards = [], []
+        for card in cards_new:
+            texts.append(card.to_text(include_price=False))
+            cards.append(card)
+        card_db = VectorDB(texts, cards, model=model)
 
     # save
     card_db.dump(artifacts_path / f"{db_name}.p")

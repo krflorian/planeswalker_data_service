@@ -71,7 +71,8 @@ class VectorDB:
 
     def add(self, embeddings_and_data) -> None:
         """Add labels and embeddings to the Search Graph."""
-
+        if not embeddings_and_data:
+            return
         embeddings, data = zip(*embeddings_and_data)
         logger.info(f"adding {len(data)} embeddings")
 
@@ -107,7 +108,7 @@ class VectorDB:
         sentences = [s for s in re.split(split_pattern, text) if s != ""]
         embeddings = self.vectorize_texts(sentences, model)
         for embedding in embeddings:
-            idxs, distances = self.graph.knn_query(embedding, k=k)
+            idxs, distances = self.graph.knn_query(embedding, k=min(k, 5))
 
             baseline_distance = distances[0][0]
             for idx, distance in zip(idxs[0], distances[0]):
