@@ -22,3 +22,7 @@ poetry install
 poetry shell 
 ```
 
+To build the container download the two necessary huggingface models to data/models: 
+- gte-large 
+- hallucination_evaluation_model
+
