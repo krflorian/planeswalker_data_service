@@ -9,9 +9,10 @@ class Intent(Enum):
     DECKBUILDING = "deckbuilding"
     RULES = "rules"
     CONVERSATION = "conversation"
+    MALICIOUS = "malevolent"
 
 
-def classify_intent(text: str, classifier: Pipeline) -> tuple[float, Intent]:
+def classify_intent(text: str, classifier: Pipeline) -> tuple[str, float]:
     """Classify the user intent into one of the classes in Intent."""
     output = classifier(text, [intent.value for intent in Intent])
     intent = output["labels"][0]
