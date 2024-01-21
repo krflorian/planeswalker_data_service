@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 hnswlib = "^0.8.0"
 uvicorn = {extras = ["standard"], version = "^0.25.0"}
 sentence-transformers = "^2.2.2"

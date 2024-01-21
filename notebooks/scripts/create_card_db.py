@@ -116,12 +116,12 @@ def create_card_db(cards: list[Card]) -> VectorDB:
 if __name__ == "__main__":
     # create variables
     db_name = "card_db_gte"
-    cards_data_path = Path("data/cards")
-    artifacts_path = Path("data/artifacts")
+    cards_data_path = Path("../data/cards")
+    artifacts_path = Path("../data/artifacts")
     all_cards_file = cards_data_path / "scryfall_all_cards_with_rulings.json"
 
     # load model
-    model = SentenceTransformer("thenlper/gte-large")
+    model = SentenceTransformer("../data/models/gte-large")
 
     # load data
     data = download_card_data()

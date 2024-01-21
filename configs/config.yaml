@@ -1,6 +1,7 @@
 
 
-cards_db_file: "data/artifacts/card_db_gte.p"
-rules_db_file: "data/artifacts/rules_db_gte.p"
-vector_model_name: "data/models/gte-large"
-halucination_model_name: "data/models/hallucination_evaluation_model"
+cards_db_file: "../data/artifacts/card_db_gte.p"
+rules_db_file: "../data/artifacts/rules_db_gte.p"
+vector_model_name: "../data/models/gte-large"
+halucination_model_name: "../data/models/hallucination_evaluation_model"
+nli_classifier: "../data/models/bart-large-mnli"

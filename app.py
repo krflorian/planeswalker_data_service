@@ -4,11 +4,13 @@ from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer, CrossEncoder
+from transformers import pipeline
 
 from src.objects import Card, Rule
 from src.util import load_config
 from src.vector_db import VectorDB
 from src.hallucination import validate_answer
+from src.nli import classify_intent
 
 config: dict = load_config(Path("configs/config.yaml"))
 vector_model: SentenceTransformer = SentenceTransformer(
@@ -16,6 +18,10 @@ vector_model: SentenceTransformer = SentenceTransformer(
 )
 hallucination_model: CrossEncoder = CrossEncoder(
     config.get("halucination_model_name", "vectara/hallucination_evaluation_model")
+)
+nli_classifier_model = pipeline(
+    "zero-shot-classification",
+    model=config.get("nli_classifier", "facebook/bart-large-mnli"),
 )
 
 
@@ -27,12 +33,8 @@ db: dict[str, VectorDB] = {
 app = FastAPI()
 
 
-class CardsRequest(BaseModel):
-    text: str
-    k: int = Field(default=5)
-    threshold: float = Field(default=0.4)
-    lasso_threshold: float = Field(default=0.1)
-    sample_results: bool = Field(default=False)
+# Interface
+## Rules
 
 
 class RulesRequest(BaseModel):
@@ -42,9 +44,20 @@ class RulesRequest(BaseModel):
     lasso_threshold: float = Field(default=0.02)
 
 
-class HalucinationRequest(BaseModel):
+class GetRulesResponse(BaseModel):
+    rule: Rule
+    distance: float
+
+
+## Cards
+
+
+class CardsRequest(BaseModel):
     text: str
-    chunks: list[str]
+    k: int = Field(default=5)
+    threshold: float = Field(default=0.4)
+    lasso_threshold: float = Field(default=0.1)
+    sample_results: bool = Field(default=False)
 
 
 class GetCardsResponse(BaseModel):
@@ -52,14 +65,32 @@ class GetCardsResponse(BaseModel):
     distance: float
 
 
-class GetRulesResponse(BaseModel):
-    rule: Rule
-    distance: float
+## Halucination
+
+
+class HalucinationRequest(BaseModel):
+    text: str
+    chunks: list[str]
 
 
 class HalucinationResponse(BaseModel):
     chunk: str
     score: float
+
+
+## NLI
+
+
+class NLIClassificationRequest(BaseModel):
+    text: str
+
+
+class NLIClassificationResponse(BaseModel):
+    intent: str
+    score: float
+
+
+# Routes
 
 
 @app.post("/cards/")
@@ -113,6 +144,14 @@ async def validate_rag_chunks(
         HalucinationResponse(chunk=chunk, score=score)
         for chunk, score in zip(request.chunks, scores)
     ]
+
+
+@app.post("/nli/")
+async def classify_user_intent(
+    request: NLIClassificationRequest,
+) -> NLIClassificationResponse:
+    intent, score = classify_intent(request.text, classifier=nli_classifier_model)
+    return NLIClassificationResponse(intent=intent, score=score)
 
 
 if __name__ == "__main__":
