@@ -9,7 +9,7 @@ class Intent(Enum):
     DECKBUILDING = "deckbuilding"
     RULES = "rules"
     CONVERSATION = "conversation"
-    MALICIOUS = "malevolent"
+    MALEVOLENT = "malevolent"
 
 
 def classify_intent(text: str, classifier: Pipeline) -> tuple[str, float]:
