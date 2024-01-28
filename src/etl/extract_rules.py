@@ -139,11 +139,13 @@ def extract_rules(text: str, keywords: list[str]) -> list[str]:
 
 if __name__ == "__main__":
     DATA_PATH = Path("../data/")
+    ETL_PATH = DATA_PATH / "etl"
 
     # load
+    # comprehensive rulebook from COMPREHENSIVE_RULES_URL as txt document
     text = load_rules(rules_file=DATA_PATH / "rules/MagicCompRules.txt")
 
-    with open(DATA_PATH / "etl/keyword_list.json", "r") as infile:
+    with open(ETL_PATH / "keyword_list.json", "r") as infile:
         keywords = json.load(infile)
 
     # extract
@@ -151,7 +153,5 @@ if __name__ == "__main__":
 
     # save documents
     document_jsons = [doc.model_dump() for doc in documents]
-    with open(
-        DATA_PATH / "etl/comprehensive_rules.json", "w", encoding="utf-8"
-    ) as outfile:
+    with open(ETL_PATH / "comprehensive_rules.json", "w", encoding="utf-8") as outfile:
         json.dump(document_jsons, outfile, ensure_ascii=False)

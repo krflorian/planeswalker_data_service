@@ -63,12 +63,14 @@ def parse_keywords_from_wikipedia():
 
 
 if __name__ == "__main__":
-    DATA_PATH = Path("../data/etl")
+    DATA_PATH = Path("../data")
+    ETL_PATH = DATA_PATH / "etl"
+
     documents = parse_keywords_from_wikipedia()
     document_jsons = [doc.model_dump() for doc in documents]
 
     # save documents
-    with open(DATA_PATH / "keywords.json", "w", encoding="utf-8") as outfile:
+    with open(ETL_PATH / "keywords.json", "w", encoding="utf-8") as outfile:
         json.dump(document_jsons, outfile, ensure_ascii=False)
 
     # save keywords as list
@@ -76,5 +78,5 @@ if __name__ == "__main__":
     for doc in documents:
         keywords.extend(doc.keywords)
     keywords = list(set(keywords))
-    with open(DATA_PATH / "keyword_list.json", "w", encoding="utf-8") as outfile:
+    with open(DATA_PATH / "rules/keyword_list.json", "w", encoding="utf-8") as outfile:
         json.dump(keywords, outfile, ensure_ascii=False)
