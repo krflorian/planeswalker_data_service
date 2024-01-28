@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from transformers import pipeline
 
-from src.objects import Card, Rule
-from src.util import load_config
+from src.objects import Card, Document
 from src.vector_db import VectorDB
+from src.util import load_config
 from src.hallucination import validate_answer
 from src.nli import classify_intent
 
@@ -45,7 +45,7 @@ class RulesRequest(BaseModel):
 
 
 class GetRulesResponse(BaseModel):
-    rule: Rule
+    document: Document
     distance: float
 
 
@@ -127,12 +127,14 @@ async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
         lasso_threshold=request.lasso_threshold,
         model=vector_model,
     )
-    # filter unique rules
-    rules = []
-    for rule, distance in query_result:
-        if rule not in rules:
-            rules.append((rule, distance))
-    return [GetRulesResponse(rule=rule, distance=distance) for rule, distance in rules]
+    # filter unique documents
+    documents = []
+    for doc, distance in query_result:
+        if doc not in documents:
+            documents.append((doc, distance))
+    return [
+        GetRulesResponse(document=doc, distance=distance) for doc, distance in documents
+    ]
 
 
 @app.post("/hallucination/")

@@ -118,6 +118,8 @@ class VectorDB:
                     search_results.append((self.ids_2_data.get(idx, None), distance))
 
         search_results = sorted(search_results, key=lambda x: x[1])[:k]
+        logger.info(f"retrieved {len(search_results)} documents")
+
         return search_results
 
     def vectorize_texts(

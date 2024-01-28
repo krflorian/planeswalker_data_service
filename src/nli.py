@@ -9,7 +9,8 @@ class Intent(Enum):
     DECKBUILDING = "deckbuilding"
     RULES = "rules"
     CONVERSATION = "conversation"
-    MALICIOUS = "malevolent"
+    SITUATION = "situation"
+    # BAD_INTENTION = "bad_intention"
 
 
 def classify_intent(text: str, classifier: Pipeline) -> tuple[str, float]:
@@ -17,6 +18,9 @@ def classify_intent(text: str, classifier: Pipeline) -> tuple[str, float]:
     output = classifier(text, [intent.value for intent in Intent])
     intent = output["labels"][0]
     score = output["scores"][0]
-    logger.info(f"classified intent: {intent} {score:.2f}")
 
+    if intent == "situation":
+        intent = "rules"
+        # TODO score = rules+situation
+    logger.info(f"classified intent: {intent} {score:.2f}")
     return intent, score
