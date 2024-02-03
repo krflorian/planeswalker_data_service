@@ -21,7 +21,9 @@ hallucination_model: CrossEncoder = CrossEncoder(
 )
 nli_classifier_model = pipeline(
     "zero-shot-classification",
-    model=config.get("nli_classifier", "facebook/bart-large-mnli"),
+    model=config.get(
+        "nli_classifier", "MoritzLaurer/deberta-v3-large-zeroshot-v1.1-all-33"
+    ),
 )
 
 
