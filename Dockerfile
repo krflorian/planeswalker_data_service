@@ -7,7 +7,7 @@ WORKDIR /app
 
 #COPY pyproject.toml poetry.lock app.py ./
 COPY app.py requirements.txt ./
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 COPY ./src /app/src
 RUN touch README.md
