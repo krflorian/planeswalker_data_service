@@ -49,15 +49,18 @@ def parse_card_data(data: list[dict], keywords: list[str]) -> list[Card]:
     return cards
 
 
-def create_card_db(cards: list[Card]) -> VectorDB:
-    texts, cards = [], []
+def create_card_db(cards: list[Card], model: SentenceTransformer) -> VectorDB:
+    texts, cards_in_db = [], []
     for card in cards:
         texts.append(card.to_text(include_price=False))
-        cards.append(card)
+        cards_in_db.append(card)
+
+        texts.append(card.name)
+        cards_in_db.append(card)
 
     card_db = VectorDB(
         texts=texts,
-        data=cards,
+        data=cards_in_db,
         model=model,
     )
     return card_db
@@ -93,9 +96,7 @@ if __name__ == "__main__":
         )
         card_db.add(embeddings_and_data)
     else:
-        card_db = VectorDB(
-            [card.to_text(include_price=False) for card in cards], cards, model=model
-        )
+        card_db = create_card_db(cards, model)
 
     # save
     card_db.dump(ARTIFACT_PATH / f"{db_name}.p")
