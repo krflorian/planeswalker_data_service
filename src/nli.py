@@ -9,7 +9,23 @@ class Intent(Enum):
     DECKBUILDING = "deckbuilding"
     RULES = "rules"
     CONVERSATION = "conversation"
-    # BAD_INTENTION = "bad_intention"
+    MALICIOUS = "malicious"
+
+
+INTENT_MAPPER = {
+    "rules_question": Intent.RULES,
+    "rules": Intent.RULES,
+    "deck_building": Intent.DECKBUILDING,
+    "specific_cards": Intent.DECKBUILDING,
+    "card_info": Intent.DECKBUILDING,
+    "trading_cards": Intent.DECKBUILDING,
+    "greeting": Intent.CONVERSATION,
+    "illegal": Intent.MALICIOUS,
+    "cheating": Intent.MALICIOUS,
+    "code": Intent.MALICIOUS,
+    "program": Intent.MALICIOUS,
+    "script": Intent.MALICIOUS,
+}
 
 
 def classify_intent(text: str, classifier: Pipeline) -> tuple[str, float]:
@@ -17,26 +33,14 @@ def classify_intent(text: str, classifier: Pipeline) -> tuple[str, float]:
 
     hypothesis_template = "You are a chatbot that answers magic the Gathering Questions. The user wants to talk about {}"
 
-    intent_mapper = {
-        "rules_question": "rules",
-        "rules": "rules",
-        "deck_building": "deckbuilding",
-        "specific_cards": "deckbuilding",
-        "card_info": "deckbuilding",
-        "trading_cards": "deckbuilding",
-        "illegal": "conversation",  # TODO should be its own class
-        "cheating": "conversation",  # TODO should be its own class
-        "greeting": "conversation",
-    }
-
     output = classifier(
         text,
-        list(intent_mapper.keys()),
+        list(INTENT_MAPPER.keys()),
         hypothesis_template=hypothesis_template,
         multi_label=False,
     )
 
-    intent = intent_mapper[output["labels"][0]]
+    intent = INTENT_MAPPER.get(output["labels"][0], "greeting")
     score = output["scores"][0]
 
     logger.info(f"classified intent: {intent} {score:.2f}")
