@@ -10,7 +10,6 @@ from src.objects import Card, Document
 from src.vector_db import VectorDB
 from src.util import load_config
 from src.hallucination import validate_answer
-from src.nli import classify_intent
 
 config: dict = load_config(Path("configs/config.yaml"))
 vector_model: SentenceTransformer = SentenceTransformer(
@@ -148,14 +147,6 @@ async def validate_rag_chunks(
         HalucinationResponse(chunk=chunk, score=score)
         for chunk, score in zip(request.chunks, scores)
     ]
-
-
-@app.post("/nli/")
-async def classify_user_intent(
-    request: NLIClassificationRequest,
-) -> NLIClassificationResponse:
-    intent, score = classify_intent(request.text, classifier=nli_classifier_model)
-    return NLIClassificationResponse(intent=intent, score=score)
 
 
 if __name__ == "__main__":
