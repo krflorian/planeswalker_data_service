@@ -4,7 +4,6 @@ from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer, CrossEncoder
-from transformers import pipeline
 
 from src.objects import Card, Document
 from src.vector_db import VectorDB
@@ -18,13 +17,6 @@ vector_model: SentenceTransformer = SentenceTransformer(
 hallucination_model: CrossEncoder = CrossEncoder(
     config.get("halucination_model_name", "vectara/hallucination_evaluation_model")
 )
-nli_classifier_model = pipeline(
-    "zero-shot-classification",
-    model=config.get(
-        "nli_classifier", "MoritzLaurer/deberta-v3-large-zeroshot-v1.1-all-33"
-    ),
-)
-
 
 db: dict[str, VectorDB] = {
     "card": VectorDB.load(config.get("cards_db_file", None)),
