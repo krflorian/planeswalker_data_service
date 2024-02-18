@@ -18,7 +18,7 @@ def parse_card_data(data: list[dict], keywords: list[str]) -> list[Card]:
                 url=card_data.get("related_uris", {}).get(
                     "gatherer", card_data.get("rulings_uri")
                 ),
-                metadata={},
+                metadata={"origin": f"Special Ruling for {card_data.get('name')}"},
                 keywords=[
                     keyword for keyword in keywords if keyword.lower() in text.lower()
                 ],
@@ -72,8 +72,8 @@ if __name__ == "__main__":
     UPDATE_DATABASE = False
     DATA_PATH = Path("../data")
     ARTIFACT_PATH = DATA_PATH / "artifacts"
-    ALL_CARDS_FILE = DATA_PATH / "cards/scryfall_all_cards_with_rulings.json"
-    KEYWORD_FILE = DATA_PATH / "rules/keyword_list.json"
+    ALL_CARDS_FILE = DATA_PATH / "etl/raw/cards/scryfall_all_cards_with_rulings.json"
+    KEYWORD_FILE = DATA_PATH / "etl/raw/keyword_list.json"
 
     # load model
     model = SentenceTransformer("../data/models/gte-large")

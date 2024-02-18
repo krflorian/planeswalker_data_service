@@ -9,8 +9,8 @@ from src.objects import Document
 if __name__ == "__main__":
     # create variables
     db_name = "rules_db_gte"
-    DATA_PATH = Path("./data")
-    ETL_PATH = DATA_PATH / "processed/documents"
+    DATA_PATH = Path("../data")
+    ETL_PATH = DATA_PATH / "etl/processed/documents"
     ARTIFACT_PATH = DATA_PATH / "artifacts"
 
     # load documents

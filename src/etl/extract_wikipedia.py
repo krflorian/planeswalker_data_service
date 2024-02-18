@@ -48,7 +48,11 @@ def parse_keywords_from_wikipedia():
                 name=f"Keyword: {keyword}",
                 text=text,
                 url=wiki.url,
-                metadata={"timestamp": str(now), "chapter": chapter},
+                metadata={
+                    "timestamp": str(now),
+                    "chapter": chapter,
+                    "origin": "wikipedia.com",
+                },
                 keywords=[keyword],
             )
             documents.append(doc)
@@ -70,7 +74,9 @@ if __name__ == "__main__":
     document_jsons = [doc.model_dump() for doc in documents]
 
     # save documents
-    with open(ETL_PATH / "keywords.json", "w", encoding="utf-8") as outfile:
+    with open(
+        ETL_PATH / "processed/documents/keywords.json", "w", encoding="utf-8"
+    ) as outfile:
         json.dump(document_jsons, outfile, ensure_ascii=False)
 
     # save keywords as list
@@ -78,5 +84,5 @@ if __name__ == "__main__":
     for doc in documents:
         keywords.extend(doc.keywords)
     keywords = list(set(keywords))
-    with open(DATA_PATH / "rules/keyword_list.json", "w", encoding="utf-8") as outfile:
+    with open(ETL_PATH / "raw/keyword_list.json", "w", encoding="utf-8") as outfile:
         json.dump(keywords, outfile, ensure_ascii=False)
