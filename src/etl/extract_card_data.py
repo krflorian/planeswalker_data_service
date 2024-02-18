@@ -66,10 +66,7 @@ def save_card_data(data: list[dict], all_cards_file: Path) -> None:
 
 if __name__ == "__main__":
     # create variables
-    CARDS_DATA_PATH = Path("../data/cards")
-
-    # load model
-    model = SentenceTransformer("../data/models/gte-large")
+    CARDS_DATA_PATH = Path("../data/etl/raw/cards")
 
     # load data
     data = download_card_data()

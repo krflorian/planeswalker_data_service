@@ -66,11 +66,12 @@ def extract_rules(text: str, keywords: list[str]) -> list[str]:
                                 url=COMPREHENSIVE_RULES_URL,
                                 metadata={
                                     "timestamp": str(now),
+                                    "origin": "Magic the Gathering: Comprehensive Rules",
                                     "filename": "MagicCompRules.txt",
                                     "chapter": chapter,
-                                    "subchapter": subchapter
-                                    if subchapter is not None
-                                    else "",
+                                    "subchapter": (
+                                        subchapter if subchapter is not None else ""
+                                    ),
                                     "rule_id": rule_id,
                                 },
                                 keywords=[
@@ -88,11 +89,12 @@ def extract_rules(text: str, keywords: list[str]) -> list[str]:
                                     url=COMPREHENSIVE_RULES_URL,
                                     metadata={
                                         "timestamp": str(now),
+                                        "origin": "Magic the Gathering: Comprehensive Rules",
                                         "filename": "MagicCompRules.txt",
                                         "chapter": chapter,
-                                        "subchapter": subchapter
-                                        if subchapter is not None
-                                        else "",
+                                        "subchapter": (
+                                            subchapter if subchapter is not None else ""
+                                        ),
                                         "rule_id": rule_id,
                                     },
                                     keywords=[
@@ -114,6 +116,7 @@ def extract_rules(text: str, keywords: list[str]) -> list[str]:
                 text=glossary_text.strip(),
                 url=COMPREHENSIVE_RULES_URL,
                 metadata={
+                    "origin": "Magic the Gathering: Comprehensive Rules",
                     "timestamp": str(now),
                     "filename": "MagicCompRules.txt",
                     "chapter": "Glossary",
@@ -143,9 +146,9 @@ if __name__ == "__main__":
 
     # load
     # comprehensive rulebook from COMPREHENSIVE_RULES_URL as txt document
-    text = load_rules(rules_file=DATA_PATH / "rules/MagicCompRules.txt")
+    text = load_rules(rules_file=ETL_PATH / "raw/MagicCompRules.txt")
 
-    with open(ETL_PATH / "keyword_list.json", "r") as infile:
+    with open(ETL_PATH / "raw/keyword_list.json", "r") as infile:
         keywords = json.load(infile)
 
     # extract
@@ -153,5 +156,9 @@ if __name__ == "__main__":
 
     # save documents
     document_jsons = [doc.model_dump() for doc in documents]
-    with open(ETL_PATH / "comprehensive_rules.json", "w", encoding="utf-8") as outfile:
+    with open(
+        ETL_PATH / "processed/documents/comprehensive_rules.json",
+        "w",
+        encoding="utf-8",
+    ) as outfile:
         json.dump(document_jsons, outfile, ensure_ascii=False)
