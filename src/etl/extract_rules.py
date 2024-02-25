@@ -9,7 +9,7 @@ from src.objects import Document
 COMPREHENSIVE_RULES_URL = "https://magic.wizards.com/en/rules"
 
 
-def load_rules(rules_file: Path = Path("data/rules/MagicCompRules.txt")) -> str:
+def load_rules(rules_file: Path = Path("../data/etl/raw/documents/MagicCompRules.txt")) -> str:
     with open(rules_file, "r", encoding="utf-8") as f:
         text = f.read()
     return text
@@ -63,7 +63,7 @@ def extract_rules(text: str, keywords: list[str]) -> list[str]:
                             Document(
                                 name=f"Comprehensive Rules: {chapter} {subchapter if subchapter is not None else ''}: {rule_id}",
                                 text=rule_text.strip(),
-                                url=COMPREHENSIVE_RULES_URL,
+                                url=f'https://blogs.magicjudges.org/rules/cr{chapter}/',
                                 metadata={
                                     "timestamp": str(now),
                                     "origin": "Magic the Gathering: Comprehensive Rules",

@@ -11,8 +11,8 @@ from src.objects import Document
 
 class RulesGuru(BaseModel):
     # Define the API endpoint
-    path_raw_data: Path = Path("./data/raw/documents/rulesguru.json")
-    path_processed_data: Path = Path("./data/processed/documents/rulesguru.json")
+    path_raw_data: Path = Path("../data/etl/raw/documents/rulesguru.json")
+    path_processed_data: Path = Path("../data/etl/processed/documents/rulesguru.json")
     data: list[dict] = Field(default_factory=list)
     documents: list[Document] = Field(default_factory=list)
     api_url: str = "https://rulesguru.net/api/questions/"
