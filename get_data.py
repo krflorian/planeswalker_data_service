@@ -1,13 +1,13 @@
 # %%
 from src.etl import RulesGuru, Rules, RulesDB
-
+from pathlib import Path
 
 # %%
 # Extract RulesGuru Data
-
-#rg = RulesGuru()
-#rg.from_file()
-#rg.process_data()
+rg = RulesGuru()
+# rg.extract_data()
+rg.data_raw = rg._from_file(Path("../data/etl/raw/documents/rulesguru.json"))
+rg.transform_data()
 
 # Extract Rules Data
 r = Rules()

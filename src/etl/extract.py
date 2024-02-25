@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from pathlib import Path
 import json
 
+
 class DataExtractor(BaseModel):
     api_url: str
     path_data_raw: Path
@@ -16,14 +17,12 @@ class DataExtractor(BaseModel):
         """
         pass
 
-
     def transform_data(self):
         """
         Transform the extracted data.
         This function should always take as the contents of the file at "path_data_raw" and save the outcome to "path_data_processed"
         """
         pass
-
 
     def get_data_raw(self):
         """
@@ -37,7 +36,6 @@ class DataExtractor(BaseModel):
             self.extract_data()
             self.data_raw = self._from_file(self.path_data_raw)
         return self.data_raw
-        
 
     def get_data_processed(self):
         """
@@ -55,7 +53,6 @@ class DataExtractor(BaseModel):
             self.transform_data()
             self.data_processed = self._from_file(self.path_data_processed)
         return self.data_processed
-        
 
     def _from_file(self, path):
         """
@@ -66,14 +63,10 @@ class DataExtractor(BaseModel):
             data = json.load(file)
         return data
 
-
     def _to_file(self, path, data):
         """
         Save data to a JSON file.
         This method takes a data object and a file path as arguments, opens the file in write mode with utf-8 encoding.
-        """        
+        """
         with open(path, "w", encoding="utf-8") as file:
             json.dump(data, file)
-
-
-    

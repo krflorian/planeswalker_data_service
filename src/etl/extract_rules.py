@@ -11,10 +11,11 @@ from src.etl.extract import DataExtractor
 
 
 class Rules(DataExtractor):
-    api_url: str = "https://media.wizards.com/2024/downloads/MagicCompRules%2020240206.txt"
+    api_url: str = (
+        "https://media.wizards.com/2024/downloads/MagicCompRules%2020240206.txt"
+    )
     path_data_raw: Path = Path("../data/etl/raw/documents/rules.txt")
     path_data_processed: Path = Path("../data/etl/processed/documents/rules.json")
-
 
     def post_model_load(self):
         pass
@@ -154,5 +155,6 @@ class Rules(DataExtractor):
         print("___________________")
 
         print(
-            "docs with keywords: ", len([doc for doc in self.data_processed if doc.keywords])
+            "docs with keywords: ",
+            len([doc for doc in self.data_processed if doc.keywords]),
         )
