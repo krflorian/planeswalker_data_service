@@ -17,7 +17,7 @@ class RulesGuru(BaseModel):
     documents: list[Document] = Field(default_factory=list)
     api_url: str = "https://rulesguru.net/api/questions/"
     ids: list[str] = Field(default_factory=list)
-    path_ids: Path = Path("ids.txt")
+    path_ids: Path = Path("../data/etl/raw/documents/ids.txt")
 
     def post_model_load(self):
         self.get_ids()
