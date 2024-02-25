@@ -1,24 +1,21 @@
 # %%
-from src.etl import RulesGuru, Rules
+from src.etl import RulesGuru, Rules, RulesDB
 
 
 # %%
-rg = RulesGuru()
-rg.from_file()
-rg.process_data()
+# Extract RulesGuru Data
 
+#rg = RulesGuru()
+#rg.from_file()
+#rg.process_data()
 
-# %%
-##############################################################################
-##############################################################################
-##############################################################################
-# %%
-
-
-# %%
+# Extract Rules Data
 r = Rules()
-
 r.extract_data()
 r.transform_data()
-r.load_data()
+
+# %%
+# Load RulesDB
+rdb = RulesDB()
+rdb.load_data()
 # %%

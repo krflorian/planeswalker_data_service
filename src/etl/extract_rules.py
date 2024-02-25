@@ -6,46 +6,34 @@ import re
 from pathlib import Path
 from datetime import datetime
 
-from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer
-
 from src.objects import Document
-from src.vector_db import VectorDB
+from src.etl.extract import DataExtractor
 
 
-class Rules(BaseModel):
-    db_name: str = "rules_db_gte"
-    path_processed_documents: Path = Path("../data/etl/processed/documents/")
-    path_artifacts: Path = Path("../data/artifacts")
-    path_raw_data: Path = Path("../data/etl/raw/documents/rules.txt")
-    path_processed_data: Path = Path("../data/etl/processed/documents/rules.json")
-    data: list[dict] = Field(default_factory=list)
-    documents: list[Document] = Field(default_factory=list)
-    api_url: str = (
-        "https://media.wizards.com/2024/downloads/MagicCompRules%2020240206.txt"
-    )
+class Rules(DataExtractor):
+    api_url: str = "https://media.wizards.com/2024/downloads/MagicCompRules%2020240206.txt"
+    path_data_raw: Path = Path("../data/etl/raw/documents/rules.txt")
+    path_data_processed: Path = Path("../data/etl/processed/documents/rules.json")
+
 
     def post_model_load(self):
-        #self.extract_data()
-        #self.transform_data()
-        #self.load_data()
         pass
 
     def extract_data(self):
         try:
             response = requests.get(self.api_url)
             response.raise_for_status()  # Raise an exception if the request was unsuccessful
-            with open(self.path_raw_data, "w") as file:
+            with open(self.path_data_raw, "w") as file:
                 file.write(response.text)
-            self.data = response.text
-            print(f"File downloaded successfully and saved at {self.path_raw_data}")
+            self.data_raw = response.text
+            print(f"File downloaded successfully and saved at {self.path_data_raw}")
         except requests.RequestException as e:
             print("Error downloading")
 
     def transform_data(self):
         now = datetime.now()
         # split the text by the word 'Credits' and take the second part starting with the rules
-        text = self.data.split("Credits", 1)[1]
+        text = self.data_raw.split("Credits", 1)[1]
         # split the text by the word 'Glossary' and take the first part as rules
         rules = text.split("Glossary", 1)[0]
         # split the text by the word 'Glossary' and take the second part as text
@@ -86,7 +74,7 @@ class Rules(BaseModel):
                                 rule_text = rule_text[0]
 
                             # TODO keywords
-                            self.documents.append(
+                            self.data_processed.append(
                                 Document(
                                     name=f"Comprehensive Rules: {chapter} {subchapter if subchapter is not None else ''}: {rule_id}",
                                     text=rule_text.strip(),
@@ -109,7 +97,7 @@ class Rules(BaseModel):
                                 )
                             )
                             for example in examples:
-                                self.documents.append(
+                                self.data_processed.append(
                                     Document(
                                         name=f"Example for Rule {subchapter if subchapter is not None else ''}: {rule_id}",
                                         text=example.strip(),
@@ -139,7 +127,7 @@ class Rules(BaseModel):
         glossary_entries = [x for x in glossary_entries if (x not in ["", "\n"])]
         for glossary_text in glossary_entries:
             entry_id = glossary_text.split("\n")[0]
-            self.documents.append(
+            self.data_processed.append(
                 Document(
                     name=f"Glossary: {entry_id}",
                     text=glossary_text.strip(),
@@ -158,64 +146,13 @@ class Rules(BaseModel):
                 )
             )
 
-        doc = random.choice(self.documents)
+        doc = random.choice(self.data_processed)
         print("___________________")
-        print(f"Processed {len(self.documents)} self.documents like this:")
+        print(f"Processed {len(self.data_processed)} self.documents like this:")
         for key, value in doc.model_dump().items():
             print(key, ": ", value)
         print("___________________")
 
         print(
-            "docs with keywords: ", len([doc for doc in self.documents if doc.keywords])
+            "docs with keywords: ", len([doc for doc in self.data_processed if doc.keywords])
         )
-
-    def load_data(self):
-        # load documents
-
-        for file in self.path_processed_documents.iterdir():
-            if file.suffix != ".json":
-                continue
-            print(f"loading data from {file.name}")
-            with file.open("r", encoding="utf-8") as infile:
-                data = json.load(infile)
-            self.documents.extend([Document(**d) for d in data])
-        print(f"loaded {len(self.documents)} documents")
-
-        # load model
-        model = SentenceTransformer(
-            "thenlper/gte-large"
-        )  # sentence-transformers/all-MiniLM-L6-v2
-
-        rules_db = VectorDB(
-            texts=[doc.text for doc in self.documents],
-            data=self.documents,
-            model=model,
-        )
-
-        # save rules db
-        rules_db.dump(self.path_artifacts / f"{self.db_name}.p")
-
-    def load_data_raw(self):
-        if Path(self.path_raw_data).is_file():
-            self.from_file()
-            # TODO delta load
-            # self.data.append(self.delta_load())
-        else:
-            self.extract_data()
-            self.to_file()
-
-    def from_file(self, path=None):
-        if path is None:
-            path = self.path_raw_data
-        with open(self.path_raw_data, "r", encoding="utf-8") as file:
-            self.data = json.load(file)
-
-    def to_file(self, data, path):
-        if data is None:
-            data = self.data
-        if path is None:
-            path = self.path_raw_data
-        # Open the file in write mode
-        with open(path, "w", encoding="utf-8") as file:
-            # Dump the dictionary as JSON to the file
-            json.dump(data, file)
