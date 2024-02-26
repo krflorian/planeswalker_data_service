@@ -147,6 +147,9 @@ class Rules(DataExtractor):
                 )
             )
 
+        self._to_json(self.data_processed)    
+        self._to_file(self.path_data_processed, self.data_processed_json)
+
         doc = random.choice(self.data_processed)
         print("___________________")
         print(f"Processed {len(self.data_processed)} self.documents like this:")

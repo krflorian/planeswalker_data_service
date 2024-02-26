@@ -10,6 +10,7 @@ class DataExtractor(BaseModel):
     path_data_processed: Path
     data_raw: list = Field(default_factory=list)
     data_processed: list = Field(default_factory=list)
+    data_processed_json: list = Field(default_factory=list)
 
     def extract_data(self):
         """
@@ -62,6 +63,11 @@ class DataExtractor(BaseModel):
         with open(path, "r", encoding="utf-8") as file:
             data = json.load(file)
         return data
+
+    def _to_json(self, data):
+        for doc in data:
+            self.data_processed_json.append(doc.model_dump())
+
 
     def _to_file(self, path, data):
         """

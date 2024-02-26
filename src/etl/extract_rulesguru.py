@@ -56,19 +56,22 @@ class RulesGuru(DataExtractor):
 
     def transform_data(self):
         for entry in self.data_raw:
-            dict = {
-                "name": f"RulesGuru.net Question-ID: {entry['question']['id']}",
-                "text": f"Question: {entry['question']['questionSimple']} Answer: {entry['question']['answerSimple']}",
-                "url": entry["question"]["url"],
-                "metadata": {
-                    "origin": "RulesGuru.net",
-                    "level": entry["question"]["level"],
-                    "complexity": entry["question"]["complexity"],
-                    "includedCards": [
-                        card["name"] for card in entry["question"]["includedCards"]
-                    ],
-                },
-                "keywords": entry["question"]["tags"],
-            }
-            self.data_processed.append(dict)
-        self._to_file(self.path_data_processed, self.data_processed)
+            self.data_processed.append(
+                Document(
+                    name=f"RulesGuru.net Question-ID: {entry['question']['id']}",
+                    text=f"Question: {entry['question']['questionSimple']} Answer: {entry['question']['answerSimple']}",
+                    url=entry["question"]["url"],
+                    metadata={
+                        "origin": "RulesGuru.net",
+                        "level": entry["question"]["level"],
+                        "complexity": entry["question"]["complexity"],
+                        "includedCards": [
+                            card["name"] for card in entry["question"]["includedCards"]
+                        ],
+                    },
+                    keywords=entry["question"]["tags"],
+                )   
+            )
+        
+        self._to_json(self.data_processed)    
+        self._to_file(self.path_data_processed, self.data_processed_json)
