@@ -24,17 +24,16 @@ class Rules(DataExtractor):
         try:
             response = requests.get(self.api_url)
             response.raise_for_status()  # Raise an exception if the request was unsuccessful
-            with open(self.path_data_raw, "w") as file:
-                file.write(response.text)
-            self.data_raw = response.text
+            self._to_txt(self.path_data_raw, response.text)
             print(f"File downloaded successfully and saved at {self.path_data_raw}")
         except requests.RequestException as e:
             print("Error downloading")
 
     def transform_data(self):
         now = datetime.now()
+        text = self._from_file(self.path_data_raw)
         # split the text by the word 'Credits' and take the second part starting with the rules
-        text = self.data_raw.split("Credits", 1)[1]
+        text = text.split("Credits", 1)[1]
         # split the text by the word 'Glossary' and take the first part as rules
         rules = text.split("Glossary", 1)[0]
         # split the text by the word 'Glossary' and take the second part as text
@@ -79,7 +78,7 @@ class Rules(DataExtractor):
                                 Document(
                                     name=f"Comprehensive Rules: {chapter} {subchapter if subchapter is not None else ''}: {rule_id}",
                                     text=rule_text.strip(),
-                                    url=f"https://blogs.magicjudges.org/rules/cr{chapter}/",
+                                    url=f"https://yawgatog.com/resources/magic-rules/#R{rule_id.replace('.', '')}",
                                     metadata={
                                         "timestamp": str(now),
                                         "origin": "Magic the Gathering: Comprehensive Rules",
@@ -102,7 +101,7 @@ class Rules(DataExtractor):
                                     Document(
                                         name=f"Example for Rule {subchapter if subchapter is not None else ''}: {rule_id}",
                                         text=example.strip(),
-                                        url=f"https://blogs.magicjudges.org/rules/cr{chapter}/",
+                                        url=f"https://yawgatog.com/resources/magic-rules/#R{rule_id.replace('.', '')}",
                                         metadata={
                                             "timestamp": str(now),
                                             "origin": "Magic the Gathering: Comprehensive Rules",
@@ -147,8 +146,7 @@ class Rules(DataExtractor):
                 )
             )
 
-        self._to_json(self.data_processed)    
-        self._to_file(self.path_data_processed, self.data_processed_json)
+        self._to_json(self.path_data_processed, self.data_processed)    
 
         doc = random.choice(self.data_processed)
         print("___________________")

@@ -2,16 +2,17 @@
 from src.etl import RulesGuru, Rules, RulesDB
 from pathlib import Path
 
+#%%
 # Extract RulesGuru Data
 rg = RulesGuru()
-rg.extract_data()
+rg.get_data_raw()
 #rg.data_raw = rg._from_file(Path("../data/etl/raw/documents/rulesguru.json.bak"))
-rg.transform_data()
+rg.get_data_raw()
 
 # Extract Rules Data
 r = Rules()
-r.extract_data()
-r.transform_data()
+r.get_data_raw()
+r.get_data_processed()
 
 # Load RulesDB
 rdb = RulesDB()
