@@ -28,6 +28,9 @@ class DataExtractor(BaseModel):
         pass
 
     def get_data(self) -> Tuple[str | list, list]:
+        """
+        Get the raw and processed data by calling the get_data_raw and get_data_processed methods.
+        """
         if self.data_raw:
             pass
         else: self.get_data_raw()
@@ -65,6 +68,9 @@ class DataExtractor(BaseModel):
 
 
     def _from_file(self, path:Path) -> str | list:
+        """
+        Load data from a file with the given path. Supports .txt and .json file types.
+        """
         if path.suffix == '.txt':
             with open(path, "r", encoding="utf-8") as file:
                 data = file.read()
@@ -77,6 +83,9 @@ class DataExtractor(BaseModel):
 
 
     def _to_file(self, path:Path, data: str | list) -> None:
+        """
+        Save data to a file with the given path. Supports .txt and .json file types.
+        """
         if path.suffix == '.txt':
             with open(path, "w") as file:
                 file.write(data)

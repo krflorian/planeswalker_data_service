@@ -12,9 +12,10 @@ class DataLoader(BaseModel):
     path_data_processed: Path = Path("../data/etl/processed/documents/")
     data_processed: list = Field(default_factory=list)
 
-    def load_data(self):
-        # load documents
-
+    def load_data(self) -> None:
+        """
+        Load data from the processed data path and save it to the database.
+        """
         for file in self.path_data_processed.iterdir():
             if file.suffix != ".json":
                 continue

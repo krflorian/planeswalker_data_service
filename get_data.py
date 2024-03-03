@@ -7,7 +7,7 @@ from pathlib import Path
 rg = RulesGuru()
 rg.get_data_raw()
 #rg.data_raw = rg._from_file(Path("../data/etl/raw/documents/rulesguru.json.bak"))
-rg.get_data_raw()
+rg.get_data_processed()
 
 # Extract Rules Data
 r = Rules()
