@@ -16,25 +16,29 @@ class StackExchangeExtractor(DataExtractor):
         "../data/etl/processed/documents/stackoverflow.json"
     )
 
-    _api: StackAPI = StackAPI(api_url)
-    _page_size: int = Field(default=50)
-    _max_year: int = Field(default=2025)
-    _min_year: int = Field(default=2010)
-    _tags: list[str] = ["mtg-stack", "mtg-commander", "magic-the-gathering"]
-
-    def model_post_init(self, *args, **kwargs) -> None:
-        self._api.page_size = self._page_size
-        self._api.max_pages = 1
+    page_size: int = Field(default=50)
+    max_year: int = Field(default=2025)
+    min_year: int = Field(default=2010)
+    tags: list[str] = [
+        "mtg-stack",
+        "mtg-commander",
+        "magic-the-gathering",
+        "mtg-priority",
+    ]
 
     def extract_data(self) -> None:
 
+        api = StackAPI(self.api_url)
+        api.page_size = self.page_size
+        api.max_pages = 1
+
         print(
-            f"downloading data from stackoverflow years {self._min_year}-{self._max_year}"
+            f"downloading data from stackoverflow years {self.min_year}-{self.max_year}"
         )
-        processed_documents = []
-        for year in range(self._min_year, self._max_year):
-            for tag in self._tags:
-                questions = self._api.fetch(
+        processed_documents, seen_questions = [], set()
+        for year in range(self.min_year, self.max_year):
+            for tag in self.tags:
+                questions = api.fetch(
                     "questions",
                     tagged=tag,
                     sort="votes",
@@ -51,13 +55,15 @@ class StackExchangeExtractor(DataExtractor):
                         and ("accepted_answer_id" in item)
                         and (item["score"] > 0)
                     ):
-                        questions_with_answers.append(item)
+                        if item["question_id"] not in seen_questions:
+                            questions_with_answers.append(item)
+                            seen_questions.add(item["question_id"])
 
                 if questions_with_answers:
                     ids = [
                         item["accepted_answer_id"] for item in questions_with_answers
                     ]
-                    answers = self._api.fetch(
+                    answers = api.fetch(
                         "answers",
                         ids=ids,
                         tagged="magic-the-gathering",
@@ -81,9 +87,11 @@ class StackExchangeExtractor(DataExtractor):
             json.dump(processed_documents, outfile, ensure_ascii=False)
 
     def transform_data(self) -> None:
+
         if not self.data_raw:
             self.data_raw = self._from_file(self.path_data_raw)
 
+        print(f"Transforming {len(self.data_raw)} items from Stackexchange")
         documents = []
         for item in self.data_raw:
             title = item["title"]
@@ -101,9 +109,10 @@ class StackExchangeExtractor(DataExtractor):
                         "answer": answer,
                         "title": title,
                         "tags": item["tags"],
-                        "score": item["score"],
+                        "score": str(item["score"]),
                     },
                 )
             )
 
+        print(f"saving processed Stackexchange data in {self.path_data_processed}")
         self._to_file(self.path_data_processed, data=documents)
