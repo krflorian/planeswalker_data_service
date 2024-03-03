@@ -16,6 +16,7 @@ fastapi = "^0.105.0"
 matplotlib = "^3.8.2"
 wikipedia = "^1.4.0"
 ipykernel = "^6.29.2"
+stackapi = "^0.3.0"
 
 
 [tool.poetry.group.dev.dependencies]
