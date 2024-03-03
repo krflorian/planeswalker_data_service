@@ -1,3 +1,3 @@
-from .extract_rulesguru import RulesGuru
-from .extract_rules import Rules
-from .load import RulesDB
+from .extractors.rulesguru import RulesGuru
+from .extractors.comprehensive_rules import Rules
+from .loaders.data_loader import RulesDB

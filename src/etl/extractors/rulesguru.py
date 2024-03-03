@@ -4,13 +4,14 @@ import urllib
 import json
 import time
 from tqdm import tqdm
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pathlib import Path
+
 from src.objects import Document
-from src.etl.extract import DataExtractor
+from .data_extractor import DataExtractor
 
 
-class RulesGuru(DataExtractor):
+class RulesGuruExtractor(DataExtractor):
     api_url: str = "https://rulesguru.net/api/questions/"
     path_data_raw: Path = Path("../data/etl/raw/documents/rulesguru.json")
     path_data_processed: Path = Path("../data/etl/processed/documents/rulesguru.json")
@@ -70,8 +71,8 @@ class RulesGuru(DataExtractor):
                         ],
                     },
                     keywords=entry["question"]["tags"],
-                )   
+                )
             )
-        
-        self._to_json(self.data_processed)    
+
+        self._to_json(self.data_processed)
         self._to_file(self.path_data_processed, self.data_processed_json)

@@ -3,6 +3,8 @@ from typing import Tuple, Any
 from pathlib import Path
 import json
 
+from src.objects import Document
+
 
 class DataExtractor(BaseModel):
     api_url: str
@@ -11,9 +13,6 @@ class DataExtractor(BaseModel):
     data_raw: Any = ""
     data_processed: list = Field(default_factory=list)
     data_processed_json: list = Field(default_factory=list)
-
-    #def model_post_init(self) -> None:
-    #    self.get_data()
 
     def extract_data(self) -> None:
         """
@@ -33,15 +32,15 @@ class DataExtractor(BaseModel):
         """
         if self.data_raw:
             pass
-        else: self.get_data_raw()
-        
+        else:
+            self.get_data_raw()
+
         if self.data_processed:
             pass
         else:
             self.get_data_processed()
-        
-        return self.data_raw, self.data_processed
 
+        return self.data_raw, self.data_processed
 
     def get_data_raw(self) -> str | list:
         """
@@ -66,37 +65,35 @@ class DataExtractor(BaseModel):
             self.data_processed = self._from_file(self.path_data_processed)
         return self.data_processed
 
-
-    def _from_file(self, path:Path) -> str | list:
+    def _from_file(self, path: Path) -> str | list:
         """
         Load data from a file with the given path. Supports .txt and .json file types.
         """
-        if path.suffix == '.txt':
+        if path.suffix == ".txt":
             with open(path, "r", encoding="utf-8") as file:
                 data = file.read()
             return data
-        elif path.suffix == '.json':
+        elif path.suffix == ".json":
             with open(path, "r", encoding="utf-8") as file:
                 data = json.load(file)
             return data
-        else: print(f"opening a file with filetype {path.suffix} is not supported")
+        else:
+            print(f"opening a file with filetype {path.suffix} is not supported")
 
-
-    def _to_file(self, path:Path, data: str | list) -> None:
+    def _to_file(self, path: Path, data: str | list[Document]) -> None:
         """
         Save data to a file with the given path. Supports .txt and .json file types.
         """
-        if path.suffix == '.txt':
+        if path.suffix == ".txt":
             with open(path, "w") as file:
                 file.write(data)
-        elif path.suffix == '.json':
+        elif path.suffix == ".json":
             list = []
             for doc in data:
                 list.append(doc.model_dump())
-            
+
             with open(path, "w", encoding="utf-8") as file:
                 json.dump(list, file)
 
-        else: print(f"opening a file with filetype {path.suffix} is not supported")
-
-
+        else:
+            print(f"opening a file with filetype {path.suffix} is not supported")

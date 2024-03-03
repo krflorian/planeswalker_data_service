@@ -7,10 +7,10 @@ from pathlib import Path
 from datetime import datetime
 
 from src.objects import Document
-from src.etl.extract import DataExtractor
+from .data_extractor import DataExtractor
 
 
-class Rules(DataExtractor):
+class ComprehensiveRulesExtractor(DataExtractor):
     api_url: str = (
         "https://media.wizards.com/2024/downloads/MagicCompRules%2020240206.txt"
     )
@@ -146,7 +146,7 @@ class Rules(DataExtractor):
                 )
             )
 
-        self._to_json(self.path_data_processed, self.data_processed)    
+        self._to_json(self.path_data_processed, self.data_processed)
 
         doc = random.choice(self.data_processed)
         print("___________________")
