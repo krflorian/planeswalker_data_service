@@ -7,7 +7,7 @@ from src.objects import Document
 from src.vector_db import VectorDB
 
 
-class DataLoader(BaseModel):
+class DocumentLoader(BaseModel):
     path_database: Path
     path_data_processed: Path = Path("../data/etl/processed/documents/")
     data_processed: list = Field(default_factory=list)
@@ -38,8 +38,3 @@ class DataLoader(BaseModel):
 
         # save rules db
         rules_db.dump(self.path_database)
-
-
-class RulesDB(DataLoader):
-    path_database: Path = Path("../data/artifacts/rules_db_gte.p")
-    path_data_processed: Path = Path("../data/etl/processed/documents/")

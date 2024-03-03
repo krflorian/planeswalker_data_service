@@ -4,7 +4,7 @@ from src.etl.extractors import (
     ComprehensiveRulesExtractor,
     StackExchangeExtractor,
 )
-from src.etl.loaders.data_loader import RulesDB
+from src.etl.loaders import DocumentLoader
 from pathlib import Path
 
 # %%
@@ -42,5 +42,8 @@ for extractor in extractors:
 # %%
 # setup rules db
 
-rdb = RulesDB()
-rdb.load_data()
+rules_db = DocumentLoader(
+    path_data_processed=DATA_PROCESSED,
+    path_database=Path("../data/artifacts/rules_db_gte.p"),
+)
+rules_db.load_data()
