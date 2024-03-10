@@ -3,9 +3,17 @@ from src.etl.extractors import (
     RulesGuruExtractor,
     ComprehensiveRulesExtractor,
     StackExchangeExtractor,
+    WikipediaExtractor,
 )
 from src.etl.loaders import DocumentLoader
 from pathlib import Path
+import logging
+
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 # %%
 # setup extractors
@@ -24,6 +32,11 @@ comprehensive_rules = ComprehensiveRulesExtractor(
 stack_exchange = StackExchangeExtractor(
     path_data_raw=DATA_RAW / "stackexchange.json",
     path_data_processed=DATA_PROCESSED / "stackexchange.json",
+)
+
+wikipedia = WikipediaExtractor(
+    path_data_raw=DATA_RAW / "wikipedia.txt",
+    path_data_processed=DATA_PROCESSED / "wikipedia.json",
 )
 
 

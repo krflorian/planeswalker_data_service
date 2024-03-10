@@ -1,9 +1,11 @@
 # %%
 import json
+import re
 from stackapi import StackAPI
 from datetime import datetime
 from pathlib import Path
 from pydantic import Field
+import logging
 
 from .data_extractor import DataExtractor
 from src.objects import Document
@@ -32,7 +34,7 @@ class StackExchangeExtractor(DataExtractor):
         api.page_size = self.page_size
         api.max_pages = 1
 
-        print(
+        logging.info(
             f"downloading data from stackoverflow years {self.min_year}-{self.max_year}"
         )
         processed_documents, seen_questions = [], set()
@@ -77,7 +79,7 @@ class StackExchangeExtractor(DataExtractor):
                         item["answer"] = anwer_id_2_answer[item["accepted_answer_id"]]
                         processed_documents.append(item)
 
-        print(
+        logging.info(
             f"downloaded {len(processed_documents)} documents from stackoverflow saving in {self.path_data_raw}"
         )
 
@@ -91,12 +93,12 @@ class StackExchangeExtractor(DataExtractor):
         if not self.data_raw:
             self.data_raw = self._from_file(self.path_data_raw)
 
-        print(f"Transforming {len(self.data_raw)} items from Stackexchange")
+        logging.info(f"Transforming {len(self.data_raw)} items from Stackexchange")
         documents = []
         for item in self.data_raw:
             title = item["title"]
-            question = item["body"]
-            answer = item["answer"]["body"]
+            question = clean_html_tags(item["body"])
+            answer = clean_html_tags(item["answer"]["body"])
             documents.append(
                 Document(
                     name=f"Stackexchange Question {item['question_id']}",
@@ -116,3 +118,17 @@ class StackExchangeExtractor(DataExtractor):
 
         print(f"saving processed Stackexchange data in {self.path_data_processed}")
         self._to_file(self.path_data_processed, data=documents)
+
+
+def clean_html_tags(text):
+    for match in re.finditer(pattern=r"<[^>]+>", string=text):
+        html_tag = match.group()
+        if "img src" in html_tag:
+            card_name = (
+                re.search(r'alt="([^"]*)"', html_tag).group().replace("alt=", "")
+            )
+            # print(card_name)
+            text = text.replace(html_tag, card_name)
+        else:
+            text = text.replace(html_tag, "")
+    return text
