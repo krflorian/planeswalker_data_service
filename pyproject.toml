@@ -5,7 +5,7 @@ description = "rest service for mtg data"
 authors = ["dataflo <florian.krempl@outlook.com>"]
 license = "mit"
 readme = "README.md"
-packages = [{ include = "src" }]
+packages = [{ from = "src", include = "*" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
