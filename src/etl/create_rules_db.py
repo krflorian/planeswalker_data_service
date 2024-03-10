@@ -40,9 +40,9 @@ wikipedia = WikipediaExtractor(
 )
 
 
-# extractors = [rules_guru, comprehensive_rules, stack_exchange]
+extractors = [rules_guru, comprehensive_rules, stack_exchange, wikipedia]
 
-extractors = [stack_exchange]
+# extractors = [stack_exchange]
 
 # %%
 # fire extractors
@@ -60,3 +60,5 @@ rules_db = DocumentLoader(
     path_database=Path("../data/artifacts/rules_db_gte.p"),
 )
 rules_db.load_data()
+
+# %%

@@ -17,14 +17,11 @@ class ComprehensiveRulesExtractor(DataExtractor):
     path_data_raw: Path = Path("../data/etl/raw/documents/rules.txt")
     path_data_processed: Path = Path("../data/etl/processed/documents/rules.json")
 
-    def post_model_load(self):
-        pass
-
     def extract_data(self):
         try:
             response = requests.get(self.api_url)
             response.raise_for_status()  # Raise an exception if the request was unsuccessful
-            self._to_txt(self.path_data_raw, response.text)
+            self._to_file(self.path_data_raw, response.text)
             print(f"File downloaded successfully and saved at {self.path_data_raw}")
         except requests.RequestException as e:
             print("Error downloading")

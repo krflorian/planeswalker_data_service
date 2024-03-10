@@ -85,7 +85,7 @@ class DataExtractor(BaseModel):
         Save data to a file with the given path. Supports .txt and .json file types.
         """
         if path.suffix == ".txt":
-            with open(path, "w") as file:
+            with open(path, "w", encoding="utf-8") as file:
                 file.write(data)
         elif path.suffix == ".json":
             list = []
