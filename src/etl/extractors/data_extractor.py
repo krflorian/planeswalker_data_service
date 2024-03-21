@@ -88,12 +88,12 @@ class DataExtractor(BaseModel):
             with open(path, "w", encoding="utf-8") as file:
                 file.write(data)
         elif path.suffix == ".json":
-            list = []
+            json_data = []
             for doc in data:
-                list.append(doc.model_dump())
+                json_data.append(doc.model_dump())
 
-            with open(path, "w", encoding="utf-8") as file:
-                json.dump(list, file)
+            with open(path, "w", encoding="utf-8") as outfile:
+                json.dump(json_data, outfile)
 
         else:
             print(f"opening a file with filetype {path.suffix} is not supported")

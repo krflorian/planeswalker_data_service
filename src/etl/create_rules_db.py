@@ -42,7 +42,7 @@ wikipedia = WikipediaExtractor(
 
 extractors = [rules_guru, comprehensive_rules, stack_exchange, wikipedia]
 
-# extractors = [stack_exchange]
+# extractors = [rules_guru]
 
 # %%
 # fire extractors

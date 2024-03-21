@@ -22,7 +22,9 @@ class DocumentLoader(BaseModel):
             print(f"loading data from {file.name}")
             with file.open("r", encoding="utf-8") as infile:
                 data = json.load(infile)
-            self.data_processed.extend([Document(**d) for d in data])
+            self.data_processed.extend(
+                [Document(**d) for d in data if len(d["text"]) < 8000]
+            )
         print(f"loaded {len(self.data_processed)} documents")
 
         # load model

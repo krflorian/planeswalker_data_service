@@ -65,6 +65,8 @@ class RulesGuruExtractor(DataExtractor):
                     metadata={
                         "origin": "RulesGuru.net",
                         "level": entry["question"]["level"],
+                        "question": entry["question"]["questionSimple"],
+                        "answer": entry["question"]["answerSimple"],
                         "complexity": entry["question"]["complexity"],
                         "includedCards": [
                             card["name"] for card in entry["question"]["includedCards"]
@@ -74,5 +76,4 @@ class RulesGuruExtractor(DataExtractor):
                 )
             )
 
-        self._to_json(self.data_processed)
-        self._to_file(self.path_data_processed, self.data_processed_json)
+        self._to_file(path=self.path_data_processed, data=self.data_processed)
