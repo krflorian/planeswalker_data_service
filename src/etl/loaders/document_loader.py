@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
-from src.objects import Document
-from src.vector_db import VectorDB
+from objects import Document
+from vector_db import VectorDB
 
 
 class DocumentLoader(BaseModel):

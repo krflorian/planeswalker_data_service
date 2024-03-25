@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-from src.objects import Document
+from objects import Document
 from .data_extractor import DataExtractor
 
 

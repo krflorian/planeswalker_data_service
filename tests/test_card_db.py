@@ -1,5 +1,5 @@
 import pytest
-from src.vector_db import VectorDB
+from vector_db import VectorDB
 
 
 @pytest.fixture(scope="module")

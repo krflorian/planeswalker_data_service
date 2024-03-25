@@ -5,10 +5,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
-from src.objects import Card, Document
-from src.vector_db import VectorDB
-from src.util import load_config
-from src.hallucination import validate_answer
+from objects import Card, Document
+from vector_db import VectorDB
+from util import load_config
+from hallucination import validate_answer
 
 config: dict = load_config(Path("configs/config.yaml"))
 vector_model: SentenceTransformer = SentenceTransformer(

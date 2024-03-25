@@ -8,7 +8,7 @@ from pydantic import Field
 import logging
 
 from .data_extractor import DataExtractor
-from src.objects import Document
+from objects import Document
 
 
 class StackExchangeExtractor(DataExtractor):
