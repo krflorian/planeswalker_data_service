@@ -1,19 +1,16 @@
 # %%
-from etl.extractors import (
+from pathlib import Path
+
+from mtg.logging import get_logger
+from mtg.etl.extractors import (
     RulesGuruExtractor,
     ComprehensiveRulesExtractor,
     StackExchangeExtractor,
     WikipediaExtractor,
 )
-from etl.loaders import DocumentLoader
-from pathlib import Path
-import logging
+from mtg.etl.loaders import DocumentLoader
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+logger = get_logger()
 
 # %%
 # setup extractors

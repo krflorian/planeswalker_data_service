@@ -4,12 +4,13 @@ FROM python:3.11
 # 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock README.md ./
-COPY app.py requirements.txt ./
+# install dependencies
+COPY ./requirements.txt /app
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-COPY ./src /app/src
-RUN pip install . 
+# copy source code to workingdir 
+COPY ./mtg /app/mtg
+COPY ./app.py /app/app.py
 
 RUN touch README.md
 ARG HF_HOME="app/data/.cache"

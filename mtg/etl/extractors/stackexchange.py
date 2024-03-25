@@ -5,10 +5,12 @@ from stackapi import StackAPI
 from datetime import datetime
 from pathlib import Path
 from pydantic import Field
-import logging
 
 from .data_extractor import DataExtractor
-from objects import Document
+from mtg.objects import Document
+from mtg.logging import get_logger
+
+logger = get_logger()
 
 
 class StackExchangeExtractor(DataExtractor):
@@ -34,7 +36,7 @@ class StackExchangeExtractor(DataExtractor):
         api.page_size = self.page_size
         api.max_pages = 1
 
-        logging.info(
+        logger.info(
             f"downloading data from stackoverflow years {self.min_year}-{self.max_year}"
         )
         processed_documents, seen_questions = [], set()
@@ -79,7 +81,7 @@ class StackExchangeExtractor(DataExtractor):
                         item["answer"] = anwer_id_2_answer[item["accepted_answer_id"]]
                         processed_documents.append(item)
 
-        logging.info(
+        logger.info(
             f"downloaded {len(processed_documents)} documents from stackoverflow saving in {self.path_data_raw}"
         )
 
@@ -93,7 +95,7 @@ class StackExchangeExtractor(DataExtractor):
         if not self.data_raw:
             self.data_raw = self._from_file(self.path_data_raw)
 
-        logging.info(f"Transforming {len(self.data_raw)} items from Stackexchange")
+        logger.info(f"Transforming {len(self.data_raw)} items from Stackexchange")
         documents = []
         for item in self.data_raw:
             title = item["title"]

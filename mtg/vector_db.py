@@ -6,7 +6,7 @@ import numpy as np
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
-from logging_utils import get_logger
+from mtg.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -18,7 +18,7 @@ class VectorDB:
         Infos and Documentation: https://github.com/nmslib/hnswlib
         """
         self.graph: hnswlib.Index = None
-        self.ids_2_data: dict[int, str] = None
+        self.ids_2_data: dict[int, Any] = None
 
         embeddings_and_data = self.get_embeddings(texts, data, model)
         self.create_graph(embeddings_and_data=embeddings_and_data)
