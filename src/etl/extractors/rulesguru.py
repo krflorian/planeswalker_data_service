@@ -7,7 +7,7 @@ from tqdm import tqdm
 from pydantic import Field
 from pathlib import Path
 
-from src.objects import Document
+from objects import Document
 from .data_extractor import DataExtractor
 
 

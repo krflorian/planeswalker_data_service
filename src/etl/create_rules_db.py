@@ -1,11 +1,11 @@
 # %%
-from src.etl.extractors import (
+from etl.extractors import (
     RulesGuruExtractor,
     ComprehensiveRulesExtractor,
     StackExchangeExtractor,
     WikipediaExtractor,
 )
-from src.etl.loaders import DocumentLoader
+from etl.loaders import DocumentLoader
 from pathlib import Path
 import logging
 

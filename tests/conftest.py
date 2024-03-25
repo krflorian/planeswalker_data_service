@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
-from src.util import load_config
+from util import load_config
 
 
 @pytest.fixture(scope="session")

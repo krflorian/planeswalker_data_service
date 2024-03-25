@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import logging
 
-from src.objects import Document
+from objects import Document
 
 
 class DataExtractor(BaseModel):
