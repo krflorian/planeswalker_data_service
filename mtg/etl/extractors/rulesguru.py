@@ -7,7 +7,7 @@ from tqdm import tqdm
 from pydantic import Field
 from pathlib import Path
 
-from objects import Document
+from mtg.objects import Document
 from .data_extractor import DataExtractor
 
 

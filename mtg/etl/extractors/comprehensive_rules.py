@@ -1,5 +1,4 @@
 import requests
-import random
 import json
 import re
 import logging
@@ -7,7 +6,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-from objects import Document
+from mtg.objects import Document
 from .data_extractor import DataExtractor
 
 

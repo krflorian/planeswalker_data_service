@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
-from objects import Document
-from vector_db import VectorDB
+from mtg.objects import Document
+from mtg.vector_db import VectorDB
 
 
 class DocumentLoader(BaseModel):

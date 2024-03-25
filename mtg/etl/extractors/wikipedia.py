@@ -4,9 +4,11 @@ from pathlib import Path
 from datetime import datetime
 import logging
 
-from objects import Document
+from mtg.objects import Document
+from mtg.logging import get_logger
 from .data_extractor import DataExtractor
 
+logger = get_logger()
 
 PROCESSED_DATA_PATH = Path("../data/etl/processed/documents/")
 RAW_DATA_PATH = Path("../data/etl/raw/documents/")
@@ -26,7 +28,7 @@ class WikipediaExtractor(DataExtractor):
         with open(self.path_data_raw, "w", encoding="utf-8") as outfile:
             outfile.write(text)
 
-        logging.info(
+        logger.info(
             f"downloaded page {self.api_url} from wikipedia saving in {self.path_data_raw}"
         )
 
@@ -48,7 +50,7 @@ class WikipediaExtractor(DataExtractor):
         chapter = re.split(chapter_pattern, processed_text[0])[1]
         chapter = chapter.replace("==", "").strip()
 
-        logging.info(f"Transforming {len(processed_text)} items from Stackexchange")
+        logger.info(f"Transforming {len(processed_text)} items from Stackexchange")
         for text in processed_text[1:]:
             if text.startswith("==="):
                 keyword = text.replace("===", "")
@@ -80,7 +82,7 @@ class WikipediaExtractor(DataExtractor):
                 )
                 documents.append(doc)
 
-        logging.info(
+        logger.info(
             f"saving {len(documents)} processed Wikipedia documents in {self.path_data_processed}"
         )
         self._to_file(self.path_data_processed, data=documents)

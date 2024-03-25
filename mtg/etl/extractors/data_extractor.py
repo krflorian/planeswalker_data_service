@@ -2,9 +2,11 @@ from pydantic import BaseModel, Field
 from typing import Tuple, Any
 from pathlib import Path
 import json
-import logging
 
-from objects import Document
+from mtg.logging import get_logger
+from mtg.objects import Document
+
+logger = get_logger()
 
 
 class DataExtractor(BaseModel):
@@ -79,9 +81,7 @@ class DataExtractor(BaseModel):
                 data = json.load(file)
             return data
         else:
-            logging.error(
-                f"opening a file with filetype {path.suffix} is not supported"
-            )
+            logger.error(f"opening a file with filetype {path.suffix} is not supported")
 
     def _to_file(self, path: Path, data: str | list[Document]) -> None:
         """
@@ -98,10 +98,8 @@ class DataExtractor(BaseModel):
             with open(path, "w", encoding="utf-8") as outfile:
                 json.dump(json_data, outfile)
 
-            logging.info(
+            logger.info(
                 f"{self.__class__.__name__} saving {len(data)} documents in {path}"
             )
         else:
-            logging.error(
-                f"opening a file with filetype {path.suffix} is not supported"
-            )
+            logger.error(f"opening a file with filetype {path.suffix} is not supported")

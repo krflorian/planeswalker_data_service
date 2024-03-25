@@ -5,9 +5,9 @@ from tqdm import tqdm
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
-from logging_utils import get_logger
-from vector_db import VectorDB
-from objects import Card, Document
+from mtg.logging import get_logger
+from mtg.vector_db import VectorDB
+from mtg.objects import Card, Document
 
 BLOCKED_CARD_TYPES = ["Card", "Stickers", "Hero"]
 NORMAL_CARD_TYPES = [
