@@ -4,9 +4,10 @@ FROM python:3.11
 # 
 WORKDIR /app
 
-# COPY pyproject.toml poetry.lock app.py ./
+COPY pyproject.toml poetry.lock app.py ./
 COPY app.py requirements.txt ./
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
+RUN pip install . 
 
 COPY ./src /app/src
 RUN touch README.md
