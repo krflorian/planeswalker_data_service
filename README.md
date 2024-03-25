@@ -21,12 +21,27 @@ At the moment there are two Vector Databases that have to be filled before the d
     - includes data relevant for understanding the game:
     - [Comprehensive Rulebook](https://magic.wizards.com/en/rules)
     - [Data about Keywords](https://en.wikipedia.org/wiki/List_of_Magic:_The_Gathering_keywords)
-    - Question Answer pairs from [RulesGuru](https://rulesguru.net/)
+    - Question Answer pairs from [RulesGuru](https://rulesguru.net/)  
+    - Question Answer pairs from [Stackoverflow](https://boardgames.stackexchange.com/questions/tagged/magic-the-gathering)
 
 2. Cards DB 
     - includes all mtg card data from [scryfall](https://scryfall.com/docs/api/bulk-data)
 
-To fill the database there are scripts in the folder `src/etl` every script beginning with `extract_` will create data as json files that can later be vectorized and inserted in the corresponding database. The scripts beginning with `create_` will do exactly that. For vectorizing the data at the moment we are using the opensouce model [gte-large](https://huggingface.co/thenlper/gte-large) from huggingface.
+To fill the database there are scripts in the folder `src/etl` every script beginning with `create_` will create data as json files that can then be vectorized and inserted in the corresponding database. For vectorizing the data at the moment we are using the opensouce model [gte-large](https://huggingface.co/thenlper/gte-large) from huggingface.
+
+To speed up vectorization the model can be placed on gpu. 
+
+https://docs.rapids.ai/install
+```shell 
+conda create --solver=libmamba -n rapids-24.04 -c rapidsai-nightly -c conda-forge -c nvidia  \
+    python=3.11 cuda-version=12.0 \
+    pytorch
+conda init 
+conda activate rapids-24.04
+
+poetry shell 
+python src/etl/create_card_db.py
+```
 
 ## Development 
 

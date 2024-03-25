@@ -1,7 +1,7 @@
 # %%
 
 from sentence_transformers import CrossEncoder
-from src.logging import get_logger
+from logging_utils import get_logger
 
 logger = get_logger(__name__)
 
