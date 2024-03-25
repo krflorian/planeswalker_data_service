@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Tuple, Any
 from pathlib import Path
 import json
+import logging
 
 from src.objects import Document
 
@@ -78,7 +79,9 @@ class DataExtractor(BaseModel):
                 data = json.load(file)
             return data
         else:
-            print(f"opening a file with filetype {path.suffix} is not supported")
+            logging.error(
+                f"opening a file with filetype {path.suffix} is not supported"
+            )
 
     def _to_file(self, path: Path, data: str | list[Document]) -> None:
         """
@@ -95,5 +98,10 @@ class DataExtractor(BaseModel):
             with open(path, "w", encoding="utf-8") as outfile:
                 json.dump(json_data, outfile)
 
+            logging.info(
+                f"{self.__class__.__name__} saving {len(data)} documents in {path}"
+            )
         else:
-            print(f"opening a file with filetype {path.suffix} is not supported")
+            logging.error(
+                f"opening a file with filetype {path.suffix} is not supported"
+            )

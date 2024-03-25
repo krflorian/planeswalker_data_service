@@ -2,6 +2,7 @@ import requests
 import random
 import json
 import re
+import logging
 
 from pathlib import Path
 from datetime import datetime
@@ -22,7 +23,9 @@ class ComprehensiveRulesExtractor(DataExtractor):
             response = requests.get(self.api_url)
             response.raise_for_status()  # Raise an exception if the request was unsuccessful
             self._to_file(self.path_data_raw, response.text)
-            print(f"File downloaded successfully and saved at {self.path_data_raw}")
+            logging.info(
+                f"downloaded comprehensive rules data, saving in {self.path_data_raw}"
+            )
         except requests.RequestException as e:
             print("Error downloading")
 
@@ -143,16 +146,7 @@ class ComprehensiveRulesExtractor(DataExtractor):
                 )
             )
 
-        self._to_json(self.path_data_processed, self.data_processed)
-
-        doc = random.choice(self.data_processed)
-        print("___________________")
-        print(f"Processed {len(self.data_processed)} self.documents like this:")
-        for key, value in doc.model_dump().items():
-            print(key, ": ", value)
-        print("___________________")
-
-        print(
-            "docs with keywords: ",
-            len([doc for doc in self.data_processed if doc.keywords]),
+        self._to_file(self.path_data_processed, self.data_processed)
+        logging.info(
+            f"extracted comprehensive rules data {len(self.data_processed)} documents, saving in {self.path_data_raw}"
         )
