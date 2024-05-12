@@ -13,3 +13,14 @@ class Document(BaseModel):
 
     def __repr__(self):
         return f"Document({self.name})"
+
+
+class ChromaDocument(BaseModel):
+    id: str  # text for display
+    text: str  # text for vectorizing
+    metadata: dict[str, Union[str, list[str]]] = Field(
+        default_factory=dict
+    )  # more info
+    
+    def __repr__(self):
+        return f"Document({self.id})"
