@@ -1,10 +1,36 @@
 services:
   app:
     build: .
-    image: data_service:latest
-    container_name: nissa
-    ports:
-      - "8000:8000"
+    image: nissa-etl:latest
+    container_name: nissa-etl
+    network_mode: "host"
+#    ports:
+#      - "8000:8000"
     volumes:
       - ./data:/app/data
       - ./configs:/app/configs
+#    depends_on:
+#      - chromadb
+    environment:
+      - gpus=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+
+#  chromadb:
+#    image: ghcr.io/chroma-core/chroma:latest
+#    container_name: chromadb
+#    network_mode: "host"
+#    volumes:
+#      - ./data/chromadb:/chroma/.chroma/index
+#    environment:
+#      - ALLOW_RESET=TRUE
+#      - ANONYMIZED_TELEMETRY=False
+#    ports:
+#      - 8000:8000
+#    restart: unless-stopped

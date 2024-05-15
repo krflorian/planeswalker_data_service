@@ -21,6 +21,6 @@ class ChromaDocument(BaseModel):
     metadata: dict[str, Union[str, list[str]]] = Field(
         default_factory=dict
     )  # more info
-    
+
     def __repr__(self):
         return f"Document({self.id})"
