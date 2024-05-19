@@ -9,8 +9,9 @@ COPY ./requirements.txt /app
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # copy source code to workingdir 
-COPY ./etl /app/mtg
+COPY ./etl /app/etl
 COPY ./app.py /app/app.py
+COPY ./config.yml /app/config.yml
 
 RUN touch README.md
 ARG HF_HOME="app/data/.cache"

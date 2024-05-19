@@ -1,19 +1,16 @@
-from etl import ChromaCollection
+from .chroma_collection import ChromaCollection
 from chromadb import HttpClient
 from chromadb.utils import embedding_functions
 from chromadb.api.models.Collection import Collection
 from pydantic import BaseModel, Field
-from typing import Union, Optional, List, Any
+from typing import Optional, List, Any, Dict
 
 import time
 import logging
 
 
 class Loader(BaseModel):
-    chromadb_host: str = Field('chromadb', description="ChromaDB host address")
-    chromadb_port: str = Field('8000', description="ChromaDB port")
-    embedding_device: str = Field('cpu', description="Device for processing: 'cpu' or 'cuda'")
-    embedding_function: str = Field('thenlper/gte-large', description="Name of the embedding function to use")
+    config: Dict = Field(None, description="Config for ChromaDB")
     collection_name: str = Field('crRulesss', description="Name of the collection in ChromaDB")
     collection: Optional[Collection] = Field(None, description="Collection object from ChromaDB")
 
@@ -32,11 +29,11 @@ class Loader(BaseModel):
 
         try:
             # Create ChromaDB client
-            client = HttpClient(self.chromadb_host, self.chromadb_port)
+            client = HttpClient(self.config["CHROMA_HOST"], int(self.config["CHROMA_PORT"]))
 
             # Create embedding function
             ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-                self.embedding_function, device=self.embedding_device)
+                self.config["EMBEDDING_FUNCTION"], device=self.config["EMBEDDING_DEVICE"])
 
             # Get or create collection
             collection = client.get_or_create_collection(
@@ -95,7 +92,7 @@ class Loader(BaseModel):
             logging.info(f"Successfully upserted {len(ids)} documents to the collection: {self.collection.name}.")
 
             # Update last successful load timestamp
-            self.update_last_successful_load(self.collection)
+            self.update_last_successful_load()
 
         except Exception as e:
             logging.exception(f"Error upserting documents to the collection: {self.collection.name}.")

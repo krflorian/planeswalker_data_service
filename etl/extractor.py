@@ -1,18 +1,27 @@
 from pydantic import BaseModel, Field
-from typing import Tuple, Any
-from pathlib import Path
-import json
+from typing import Any, Tuple
 from chromadb.api.models.Collection import Collection
-from typing import Union, Optional, List, Any
-from etl import Loader
+from .loader import Loader
+from typing import Optional, List, Dict
 
 
 class Extractor(BaseModel):
+    collection_name: str = Field(None, description="Collection Name for ChromaDB")
+    config: Dict = Field(None, description="Config for ChromaDB")
     documents: Optional[List] = Field(None, description="Collection object from ChromaDB")
-    collection_name: str = Field('crRulesss', description="Name of the collection in ChromaDB")
-    collection: Optional[Collection] = Field(None, description="Collection object from ChromaDB")
+    loader: Optional[Loader] = Field(None, description="Collection object from ChromaDB")
 
+    def model_post_init(self, __context: Any) -> None:
+        self.loader = Loader(collection_name=self.collection_name, config=self.config)
 
+    def get_data(self) -> Tuple[str | list, list]:
+        """
+        Get the raw and processed data by calling the get_data_raw and get_data_processed methods.
+        """
+        self.full_extract()
+        self.transform_data()
+        self.loader.upsert_documents_to_collection(self.documents)
+        pass
 
     def full_extract(self) -> None:
         """
@@ -33,52 +42,6 @@ class Extractor(BaseModel):
         """
         pass
 
-    def get_data(self) -> Tuple[str | list, list]:
-        """
-        Get the raw and processed data by calling the get_data_raw and get_data_processed methods.
-        """
-        self.collection = Loader(collection_name=self.collection_name)
-
-        if self.collection.count() == 0:
-            self.transform_data(self.full_extract())
-        else:
-            self.transform_data(self.delta_extract())
-
-    def _from_file(self, path: Path) -> str | list:
-        """
-        Load data from a file with the given path. Supports .txt and .json file types.
-        """
-        if path.suffix == ".txt":
-            with open(path, "r", encoding="utf-8") as file:
-                data = file.read()
-            return data
-        elif path.suffix == ".json":
-            with open(path, "r", encoding="utf-8") as file:
-                data = json.load(file)
-            return data
-        else:
-            logger.error(f"opening a file with filetype {path.suffix} is not supported")
-
-    def _to_file(self, path: Path, data: str | list[Document]) -> None:
-        """
-        Save data to a file with the given path. Supports .txt and .json file types.
-        """
-        if path.suffix == ".txt":
-            with open(path, "w", encoding="utf-8") as file:
-                file.write(data)
-        elif path.suffix == ".json":
-            json_data = []
-            for doc in data:
-                json_data.append(doc.model_dump())
-
-            with open(path, "w", encoding="utf-8") as outfile:
-                json.dump(json_data, outfile)
-
-            logger.info(
-                f"{self.__class__.__name__} saving {len(data)} documents in {path}"
-            )
-        else:
-            logger.error(f"opening a file with filetype {path.suffix} is not supported")
 
 
 

@@ -1,43 +1,52 @@
 import logging
-
-from pathlib import Path
 from datetime import datetime
-from etl import Extractor, get_request, ChromaCollection
+from .chroma_collection import ChromaCollection
+from .extractor import Extractor
+from .request import get_request
 from chromadb.api.models.Collection import Collection
-
+from typing import Optional, List
+from pydantic import Field
 
 class RulesExtractor(Extractor):
+    collection_name: str = Field('crRules', description="Collection name from ChromaDB")
+    rules: Optional[List] = Field(None, description="Collection object from ChromaDB")
+    chapter_names: Optional[List] = Field(None, description="Collection object from ChromaDB")
+
 
     def get_data(self):
         updates = get_request(api_url="https://api.academyruins.com/diff/cr")
 
-        if self.collection.count() == 0:
-            self.transform_data(self.full_extract())
-        elif self.collection.metadata['lastUpdate'] < datetime.strptime(updates['creationDay'], "%Y-%m-%d").timestamp():
-            self.transform_data(self.delta_extract())
+        if self.loader.collection.count() == 0:
+            self.full_extract()
+            self.transform_data()
+            self.loader.upsert_documents_to_collection(self.documents)
+        elif self.loader.collection.metadata['lastUpdate'] < datetime.strptime(updates['creationDay'], "%Y-%m-%d").timestamp():
+            self.delta_extract()
+            self.transform_data()
+            self.loader.upsert_documents_to_collection(self.documents)
+        else: print(f"collection {self.loader.collection_name} is up-to-date with latest data from {updates['creationDay']}")
         return self.documents
 
 # extract chapter names
-    def full_extract() -> list[ChromaCollection]: 
+    def full_extract(self) -> list[ChromaCollection]: 
         logging.info(f"Starting full-extraction")
-        chapter_names = get_request("https://api.academyruins.com/cr/toc")
+        self.chapter_names = get_request("https://api.academyruins.com/cr/toc")
         logging.info(f"Successfully extracted chapter names")
         # extract rules
-        rules = get_request("https://api.academyruins.com/cr") 
-        logging.info(f"Successfully extracted {len(rules)} rules and {len(chapter_names)} chapters")
-        
-        return rules, chapter_names
+        self.rules = get_request("https://api.academyruins.com/cr") 
+        logging.info(f"Successfully extracted {len(self.rules)} rules and {len(self.chapter_names)} chapters")
+
 
         # TODO: get glossary and unoficcial glossary
         # TODO: check how keywords where added to rules
 
 
-    def get_delta(self, collection: Collection): # Initialize a set to hold the distinct ruleNumbers 
+    def get_delta(self): # Initialize a set to hold the distinct ruleNumbers 
         logging.info(f"geting delta.")
         updates = get_request(api_url="https://api.academyruins.com/diff/cr")
         distinct_rule_numbers = set()
 
-        if collection.metadata['lastUpdate'] < datetime.strptime(updates['creationDay'], "%Y-%m-%d").timestamp():
+        if self.loader.collection.metadata['lastUpdate'] < datetime.strptime(updates['creationDay'], "%Y-%m-%d").timestamp():
             # Iterate over each entry in the data
             for entry in updates['changes']:
                 try:
@@ -77,7 +86,7 @@ class RulesExtractor(Extractor):
             # extract rules
             rules = get_request("https://api.academyruins.com/cr") 
             self.rules = {doc_id: document for doc_id, document in rules.items() if doc_id in ids}
-            logging.info(f"Successfully extracted rules")
+            logging.info(f"Successfully extracted {len(self.rules)} rules")
 
 
     def transform_data(self) -> list[ChromaCollection]:
