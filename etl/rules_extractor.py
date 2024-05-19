@@ -16,16 +16,17 @@ class RulesExtractor(Extractor):
     def get_data(self):
         updates = get_request(api_url="https://api.academyruins.com/diff/cr")
 
-        if self.loader.collection.count() == 0:
+        if self.loader.collection.count() == 0 or self.config["ETL_MODE"] == 'full':
             self.full_extract()
-            self.transform_data()
-            self.loader.upsert_documents_to_collection(self.documents)
         elif self.loader.collection.metadata['lastUpdate'] < datetime.strptime(updates['creationDay'], "%Y-%m-%d").timestamp():
             self.delta_extract()
-            self.transform_data()
-            self.loader.upsert_documents_to_collection(self.documents)
-        else: print(f"collection {self.loader.collection_name} is up-to-date with latest data from {updates['creationDay']}")
-        return self.documents
+        else: 
+            print(f"collection {self.loader.collection_name} is up-to-date with latest data from {updates['creationDay']}")
+            return
+
+        self.transform_data()
+        self.loader.upsert_documents_to_collection(self.documents)
+        return
 
 # extract chapter names
     def full_extract(self) -> list[ChromaCollection]: 

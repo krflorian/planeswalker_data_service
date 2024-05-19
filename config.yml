@@ -4,4 +4,5 @@
 CHROMA_HOST: "localhost"                      # e.g., "localhost" or "192.168.1.100"
 CHROMA_PORT: "8000"                           # e.g., 8080 or other valid port numbers
 EMBEDDING_FUNCTION: "thenlper/gte-large"      # e.g., "default" or any other embedding function name
-EMBEDDING_DEVICE: "cuda"                       # e.g., "cpu" or "cuda"
+EMBEDDING_DEVICE: "cuda"                      # e.g., "cpu" or "cuda"
+ETL_MODE: "normal"                            # e.g., "normal" or "full"
