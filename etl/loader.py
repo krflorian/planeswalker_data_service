@@ -39,8 +39,7 @@ class Loader(BaseModel):
             collection = client.get_or_create_collection(
                 name=self.collection_name, embedding_function=ef)
 
-            logging.info(f"Successfully created collection {self.collection_name} "
-                         f"with {collection.count()} documents")
+            logging.info(f"Successfully created collection {self.collection_name} with {collection.count()} documents")
 
             return collection
         except Exception as e:

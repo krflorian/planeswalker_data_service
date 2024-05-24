@@ -16,7 +16,7 @@ class RulesExtractor(Extractor):
     def get_data(self):
         updates = get_request(api_url="https://api.academyruins.com/diff/cr")
 
-        if self.loader.collection.count() == 0 or self.config["ETL_MODE"] == 'full':
+        if len(self.loader.collection.get(where={"documentType" : "rule"})['ids']) == 0 or self.config["ETL_MODE"] == 'full':
             self.full_extract()
         elif self.loader.collection.metadata['lastUpdate'] < datetime.strptime(updates['creationDay'], "%Y-%m-%d").timestamp():
             self.delta_extract()
@@ -29,7 +29,7 @@ class RulesExtractor(Extractor):
         return
 
 # extract chapter names
-    def full_extract(self) -> list[ChromaCollection]: 
+    def full_extract(self): 
         logging.info(f"Starting full-extraction")
         self.chapter_names = get_request("https://api.academyruins.com/cr/toc")
         logging.info(f"Successfully extracted chapter names")
