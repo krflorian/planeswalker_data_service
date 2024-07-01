@@ -9,12 +9,12 @@ COPY ./requirements.txt /app
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # copy source code to workingdir 
-COPY ./mtg /app/mtg
+COPY ./etl /app/etl
 COPY ./app.py /app/app.py
+COPY ./config.yml /app/config.yml
 
 RUN touch README.md
 ARG HF_HOME="app/data/.cache"
 ENV HF_HOME="app/data/.cache"
 
-# 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "app.py"]
