@@ -1,18 +1,17 @@
-from pydantic import BaseModel, Field
+from abc import ABC
 from typing import Any, Tuple
 from chromadb.api.models.Collection import Collection
-from .loader import Loader
 from typing import Optional, List, Dict
 
+from etl.database import ChromaDB, ETLMode
 
-class Extractor(BaseModel):
-    collection_name: str = Field(None, description="Collection Name for ChromaDB")
-    config: Dict = Field(None, description="Config for ChromaDB")
-    documents: Optional[List] = Field(None, description="Collection object from ChromaDB")
-    loader: Optional[Loader] = Field(None, description="Collection object from ChromaDB")
 
-    def model_post_init(self, __context: Any) -> None:
-        self.loader = Loader(collection_name=self.collection_name, config=self.config)
+class Extractor(ABC):
+
+    def __init__(self, db=ChromaDB, etl_mode: ETLMode = ETLMode.FULL):
+        self.db = db
+        self.etl_mode = etl_mode
+        self.documents = []
 
     def get_data(self) -> Tuple[str | list, list]:
         """
@@ -29,7 +28,6 @@ class Extractor(BaseModel):
         """
         pass
 
-    
     def delta_extract(self) -> None:
         """
         Extract data from the data source, and save it as .txt or .json to the directory specified in self.path_data_raw
@@ -41,7 +39,3 @@ class Extractor(BaseModel):
         Load data from the directory specified in self.path_data_raw, transform the data, so that it is a list of json objects, and save them to the directory specified in self.path_data_processed.
         """
         pass
-
-
-
-

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "planeswalker-etl-service"
+name = "planeswalker-data-service"
 version = "0.1.0"
 description = ""
 authors = ["Maximilian Pichler <maximilian.pichler@a1.at>"]
@@ -13,6 +13,8 @@ requests = "^2.31.0"
 chromadb = "^0.5.0"
 ipykernel = "^6.29.4"
 black = "^24.4.2"
+
+[tool.poetry.dev.dependencies]
 sentence-transformers = "^2.7.0"
 
 

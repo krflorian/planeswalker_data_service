@@ -174,7 +174,7 @@ collection_name:str = 'crRulesss'
 
 ############ Main ############
 
-from etl.loader import Loader
+from etl.database.chroma_db import Loader
 
 
 loader_instance = Loader(

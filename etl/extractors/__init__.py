@@ -1,5 +1,5 @@
 # %%
 from .comprehensive_rules import ComprehensiveRulesExtractor
-from .rulesguru import RulesGuruExtractor
-from .stackexchange import StackExchangeExtractor
-from .wikipedia import WikipediaExtractor
+from .deprecated_rulesguru import RulesGuruExtractor
+from .deprecated_stackexchange import StackExchangeExtractor
+from .deprecated_wikipedia import WikipediaExtractor

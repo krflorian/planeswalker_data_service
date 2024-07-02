@@ -1,3 +1,3 @@
-from .rules_extractor import RulesExtractor
-from .glossary_extractor import GlossaryExtractor
-from .config_loader import ConfigLoader
+from .extractors.rules_extractor import RulesExtractor
+from .extractors.glossary_extractor import GlossaryExtractor
+from .database.config import ConfigLoader
