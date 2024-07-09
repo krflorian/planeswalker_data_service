@@ -1,3 +1,5 @@
+# %%
+
 import uvicorn
 from pathlib import Path
 
@@ -23,13 +25,14 @@ db: dict[str, VectorDB] = {
     "rule": VectorDB.load(config.get("rules_db_file", None)),
 }
 
+db["card"]
+
+# %%
 app = FastAPI()
 
 
 # Interface
 ## Rules
-
-
 class RulesRequest(BaseModel):
     text: str
     k: int = Field(default=5)
@@ -43,8 +46,6 @@ class GetRulesResponse(BaseModel):
 
 
 ## Cards
-
-
 class CardsRequest(BaseModel):
     text: str
     k: int = Field(default=5)
@@ -58,34 +59,17 @@ class GetCardsResponse(BaseModel):
     distance: float
 
 
-## Halucination
-
-
-class HalucinationRequest(BaseModel):
-    text: str
-    chunks: list[str]
-
-
-class HalucinationResponse(BaseModel):
-    chunk: str
-    score: float
-
-
-## NLI
-
-
-class NLIClassificationRequest(BaseModel):
+## Parse Text
+class ParseTextRequest(BaseModel):
     text: str
 
 
-class NLIClassificationResponse(BaseModel):
-    intent: str
-    score: float
+class ParseTextResponse(BaseModel):
+    text: str
+    cards: list[Card]
 
 
 # Routes
-
-
 @app.post("/cards/")
 async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
     # when sampling retrieve more cards
@@ -127,17 +111,6 @@ async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
             documents.append((doc, distance))
     return [
         GetRulesResponse(document=doc, distance=distance) for doc, distance in documents
-    ]
-
-
-@app.post("/hallucination/")
-async def validate_rag_chunks(
-    request: HalucinationRequest,
-) -> list[HalucinationResponse]:
-    scores = validate_answer(request.text, request.chunks, model=hallucination_model)
-    return [
-        HalucinationResponse(chunk=chunk, score=score)
-        for chunk, score in zip(request.chunks, scores)
     ]
 
 

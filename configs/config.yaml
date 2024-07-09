@@ -1,7 +1,9 @@
 
 
-cards_db_file: "../data/artifacts/card_db_gte.p"
-rules_db_file: "../data/artifacts/rules_db_gte.p"
-vector_model_name: "../data/models/gte-large"
-halucination_model_name: "../data/models/hallucination_evaluation_model"
-nli_classifier: "../data/models/deberta-v3-large-zeroshot-v1.1-all-33"
+CHROMA: 
+  host: "../data/chromadb"
+  port: "8000"
+  embedding_model: "../data/models/gte-large"
+  embedding_device: "cpu"
+  collection_name_documents: "documents"
+  collection_name_cards: "cards"
