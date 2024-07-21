@@ -15,7 +15,7 @@ http://127.0.0.1:8000/docs
 
 ## SETUP
 
-At the moment there are two Vector Databases that have to be filled before the dataservice can start workting. 
+At the moment there are two Vector Databases that have to be filled before the dataservice can start working. 
 
 1. Rules DB 
     - includes data relevant for understanding the game:
@@ -29,20 +29,6 @@ At the moment there are two Vector Databases that have to be filled before the d
 
 To fill the database there are scripts in the folder `src/etl` every script beginning with `create_` will create data as json files that can then be vectorized and inserted in the corresponding database. For vectorizing the data at the moment we are using the opensouce model [gte-large](https://huggingface.co/thenlper/gte-large) from huggingface.
 
-To speed up vectorization the model can be placed on gpu. 
-
-https://docs.rapids.ai/install
-```shell 
-conda create --solver=libmamba -n rapids-24.04 -c rapidsai-nightly -c conda-forge -c nvidia  \
-    python=3.11 cuda-version=12.0 \
-    pytorch
-conda init 
-conda activate rapids-24.04
-
-poetry shell 
-python src/etl/create_card_db.py
-```
-
 ## Development 
 
 ```shell 
@@ -50,9 +36,4 @@ pip install --upgrade poetry
 poetry install 
 poetry shell 
 ```
-
-To build the container download the three necessary huggingface models to data/models: 
-- gte-large 
-- hallucination_evaluation_model
-- bart-large-mnli
 

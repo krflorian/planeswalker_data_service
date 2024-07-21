@@ -42,6 +42,8 @@ class ChromaDB:
         Raises:
             Exception: If there's an error creating or retrieving the collection.
         """
+        if not isinstance(collection_type, CollectionType):
+            collection_type = CollectionType(collection_type)
 
         try:
             # Create ChromaDB client

@@ -8,7 +8,6 @@ from pathlib import Path
 
 from mtg.util import load_config
 from mtg.logging import get_logger
-from mtg.vector_db import VectorDB
 from mtg.objects import Card, Document
 from mtg.etl.cards.categorizer import create_categorizer
 from mtg.chroma import ChromaDocument
@@ -34,6 +33,12 @@ NORMAL_CARD_TYPES = [
 DOUBLE_FACED = ["transform", "card_faces", "flip", "split"]
 
 logger = get_logger()
+
+
+def batch(iterable, batch_size=1):
+    length = len(iterable)
+    for idx in range(0, length, batch_size):
+        yield iterable[idx : min(idx + batch_size, length)]
 
 
 def download_card_data(
@@ -175,9 +180,7 @@ if __name__ == "__main__":
     ###################################
     # 2. Transform: process card data #
     ###################################
-
     logger.info("starting transform")
-    chat = create_categorizer("gpt-4o")
     with ALL_CARDS_FILE.open("r", encoding="utf-8") as infile:
         data = json.load(infile)
     with KEYWORD_FILE.open("r", encoding="utf-8") as infile:
@@ -186,9 +189,10 @@ if __name__ == "__main__":
     processed_card_ids = set([file.stem for file in OUTPUT_PATH.iterdir()])
 
     cards = parse_card_data(data=data, keywords=keywords)
-
     new_cards = [card for card in cards if card.id not in processed_card_ids]
+    # chat = create_categorizer("gpt-4o")
     for card in tqdm(new_cards, desc="Transforming cards"):
+        """
         response = chat.invoke({"card_text": card.to_text()})
 
         categories = json.loads(
@@ -196,6 +200,7 @@ if __name__ == "__main__":
         )
         categories = [k for k, v in categories.items() if v]
         card.categories = categories
+        """
 
         card_data = card.to_dict()
         with open(OUTPUT_PATH / f"{card.id}.json", "w", encoding="utf-8") as outfile:
@@ -210,22 +215,28 @@ if __name__ == "__main__":
     chroma_config = ChromaConfig(**config["CHROMA"])
     db = ChromaDB(chroma_config)
 
-    documents = []
-    for card in new_cards:
+    batch_size = 100
+    batches = batch(cards, batch_size)
+    for mini_batch in tqdm(
+        batches, desc="uploading documents", total=len(cards) // batch_size
+    ):
 
-        text = f"""
-        {card.name}
-        {card.type}
-        {card.oracle}
-        """
-        documents.append(
-            ChromaDocument(
-                id=str(uuid4()),
-                document=text,
-                metadata=card.to_chroma(),
+        documents = []
+        for card in mini_batch:
+
+            text = f"""
+            {card.name}
+            {card.type}
+            {card.oracle}
+            """
+            documents.append(
+                ChromaDocument(
+                    id=str(uuid4()),
+                    document=text,
+                    metadata=card.to_chroma(),
+                )
             )
-        )
 
-    db.upsert_documents_to_collection(
-        documents=documents, collection_type=CollectionType.CARDS
-    )
+        db.upsert_documents_to_collection(
+            documents=documents, collection_type=CollectionType.CARDS
+        )

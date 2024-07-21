@@ -109,6 +109,7 @@ class StackExchangeExtractor(DataExtractor):
                     ),
                     url=item["link"],
                     metadata={
+                        "origin": "stackexchange.com",
                         "question": question,
                         "answer": answer,
                         "title": title,
