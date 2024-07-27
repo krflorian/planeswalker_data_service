@@ -11,6 +11,7 @@ from mtg.objects import Card, Document
 from mtg.chroma.config import ChromaConfig
 from mtg.chroma.chroma_db import ChromaDB, CollectionType
 from mtg.util import load_config, read_json_file
+from mtg.url_parsing import parse_card_names
 
 config: dict = load_config(Path("configs/config.yaml"))
 chroma_config = ChromaConfig(**config["CHROMA"])
@@ -84,17 +85,33 @@ class GetCardsResponse(BaseModel):
     distance: float
 
 
-## Parse Text
-class ParseTextRequest(BaseModel):
+class CardNameRequest(BaseModel):
+    card_name: str
+
+
+class CardParseRequest(BaseModel):
     text: str
 
 
-class ParseTextResponse(BaseModel):
+class CardParseResponse(BaseModel):
     text: str
-    cards: list[Card]
 
 
 # Routes
+@app.get("/card_name/{card_name}")
+async def search_card(card_name: str) -> GetCardsResponse:
+
+    card = card_name_2_card.get(card_name, None)
+    return GetCardsResponse(card=card, distance=0.0)
+
+
+@app.post("/parse_card_urls/")
+async def get_cards(request: CardParseRequest) -> CardParseResponse:
+
+    text = parse_card_names(request.text, card_name_2_card=card_name_2_card)
+    return CardParseResponse(text=text)
+
+
 @app.post("/cards/")
 async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
     # TODO sampling
