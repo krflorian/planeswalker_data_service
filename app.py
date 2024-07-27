@@ -1,40 +1,68 @@
+import logging
 import uvicorn
 from pathlib import Path
+from typing import Optional
+import difflib
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer, CrossEncoder
 
 from mtg.objects import Card, Document
-from mtg.vector_db import VectorDB
-from mtg.util import load_config
-from mtg.hallucination import validate_answer
+from mtg.chroma.config import ChromaConfig
+from mtg.chroma.chroma_db import ChromaDB, CollectionType
+from mtg.util import load_config, read_json_file
+from mtg.url_parsing import parse_card_names
 
 config: dict = load_config(Path("configs/config.yaml"))
-vector_model: SentenceTransformer = SentenceTransformer(
-    config.get("vector_model_name", "thenlper/gte-large")
-)
-hallucination_model: CrossEncoder = CrossEncoder(
-    config.get("halucination_model_name", "vectara/hallucination_evaluation_model")
-)
+chroma_config = ChromaConfig(**config["CHROMA"])
+db = ChromaDB(chroma_config)
 
-db: dict[str, VectorDB] = {
-    "card": VectorDB.load(config.get("cards_db_file", None)),
-    "rule": VectorDB.load(config.get("rules_db_file", None)),
-}
+cards_collection = db.get_collection(CollectionType.CARDS)
+documents_collection = db.get_collection(CollectionType.DOCUMENTS)
 
+
+# load card data
+# TODO -> make class CardDB and load from config
+cards_folder = Path("../data/etl/processed/cards")
+data = []
+for file in cards_folder.iterdir():
+    data.append(read_json_file(file))
+
+cards = [Card(**d) for d in data]
+card_name_2_card = {card.name: card for card in cards}
+
+all_keywords, all_legalities = set(), set()
+
+for card in data:
+    for keyword in card["keywords"]:
+        all_keywords.add(keyword)
+    for legality in card["legalities"]:
+        if card["legalities"][legality] == "legal":
+            all_legalities.add(legality)
+
+all_keywords = list(all_keywords)
+all_legalities = list(all_legalities)
+all_color_identities = {"W", "U", "B", "R", "G"}
+
+# load rules data
+docs_folder = Path("../data/etl/processed/documents")
+documents = []
+for file in docs_folder.iterdir():
+    data = read_json_file(file)
+    for doc in data:
+        documents.append(Document(**doc))
+document_name_2_document = {doc.name: doc for doc in documents}
+
+# app
 app = FastAPI()
 
 
 # Interface
 ## Rules
-
-
 class RulesRequest(BaseModel):
     text: str
     k: int = Field(default=5)
     threshold: float = Field(default=0.2)
-    lasso_threshold: float = Field(default=0.02)
 
 
 class GetRulesResponse(BaseModel):
@@ -43,14 +71,13 @@ class GetRulesResponse(BaseModel):
 
 
 ## Cards
-
-
 class CardsRequest(BaseModel):
     text: str
-    k: int = Field(default=5)
+    keywords: list[str] = Field(default_factory=list)
+    color_identity: list[str] = Field(default_factory=list)
+    legality: Optional[str] = Field(default=None)
+    k: int = Field(default=10)
     threshold: float = Field(default=0.4)
-    lasso_threshold: float = Field(default=0.1)
-    sample_results: bool = Field(default=False)
 
 
 class GetCardsResponse(BaseModel):
@@ -58,87 +85,98 @@ class GetCardsResponse(BaseModel):
     distance: float
 
 
-## Halucination
+class CardNameRequest(BaseModel):
+    card_name: str
 
 
-class HalucinationRequest(BaseModel):
-    text: str
-    chunks: list[str]
-
-
-class HalucinationResponse(BaseModel):
-    chunk: str
-    score: float
-
-
-## NLI
-
-
-class NLIClassificationRequest(BaseModel):
+class CardParseRequest(BaseModel):
     text: str
 
 
-class NLIClassificationResponse(BaseModel):
-    intent: str
-    score: float
+class CardParseResponse(BaseModel):
+    text: str
 
 
 # Routes
+@app.get("/card_name/{card_name}")
+async def search_card(card_name: str) -> GetCardsResponse:
+
+    card = card_name_2_card.get(card_name, None)
+    return GetCardsResponse(card=card, distance=0.0)
+
+
+@app.post("/parse_card_urls/")
+async def get_cards(request: CardParseRequest) -> CardParseResponse:
+
+    text = parse_card_names(request.text, card_name_2_card=card_name_2_card)
+    return CardParseResponse(text=text)
 
 
 @app.post("/cards/")
 async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
-    # when sampling retrieve more cards
-    if request.sample_results:
-        k = request.k * 2
-    else:
-        k = request.k
+    # TODO sampling
+    # TODO code should be in class CardDB
+    # create query
+    query = {"query_texts": [request.text], "n_results": request.k, "where": {}}
 
-    # query database
-    query_result = db["card"].query(
-        text=request.text,
-        k=k,
-        threshold=request.threshold,
-        lasso_threshold=request.lasso_threshold,
-        model=vector_model,
-    )
-    if request.sample_results:
-        query_result = db["card"].sample_results(query_result, request.k)
+    # keywords
+    for search_term in request.keywords:
+        matches = difflib.get_close_matches(search_term, all_keywords, n=1)
+        if matches:
+            query["where"][f"keyword_{matches[0]}"] = True
+        else:
+            logging.info(f"did not find keyword: {query}")
 
-    return [
-        GetCardsResponse(card=result[0], distance=result[1]) for result in query_result
-    ]
+    # legalities
+    if request.legality is not None:
+        matches = difflib.get_close_matches(request.legality, all_legalities, n=1)
+        if matches:
+            query["where"][f"{matches[0]}_legal"] = True
+        else:
+            logging.info(f"did not find legality: {query}")
+
+    # color identity
+    for color in request.color_identity:
+        if color.upper() in all_color_identities:
+            query["where"][f"color_identity_{color.upper()}"] = True
+
+    if len(query["where"]) > 1:
+        query["where"] = {
+            "$and": [{key: value} for key, value in query["where"].items()]
+        }
+
+    # query
+    results = cards_collection.query(**query)
+
+    response = []
+    for distance, metadata in zip(results["distances"][0], results["metadatas"][0]):
+        if distance <= request.threshold:
+            response.append(
+                GetCardsResponse(
+                    card=card_name_2_card.get(metadata["name"], None), distance=distance
+                )
+            )
+
+    return response
 
 
 @app.post("/rules/")
 async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
-    # query database
-    query_result = db["rule"].query(
-        text=request.text,
-        k=request.k,
-        threshold=request.threshold,
-        lasso_threshold=request.lasso_threshold,
-        model=vector_model,
-    )
-    # filter unique documents
-    documents = []
-    for doc, distance in query_result:
-        if doc not in documents:
-            documents.append((doc, distance))
-    return [
-        GetRulesResponse(document=doc, distance=distance) for doc, distance in documents
-    ]
 
+    query = {"query_texts": [request.text], "n_results": request.k}
+    results = documents_collection.query(**query)
 
-@app.post("/hallucination/")
-async def validate_rag_chunks(
-    request: HalucinationRequest,
-) -> list[HalucinationResponse]:
-    scores = validate_answer(request.text, request.chunks, model=hallucination_model)
-    return [
-        HalucinationResponse(chunk=chunk, score=score)
-        for chunk, score in zip(request.chunks, scores)
-    ]
+    response = []
+    for distance, metadata in zip(results["distances"][0], results["metadatas"][0]):
+        if distance <= request.threshold:
+            response.append(
+                GetRulesResponse(
+                    document=document_name_2_document.get(metadata["name"], None),
+                    distance=distance,
+                )
+            )
+
+    return response
 
 
 if __name__ == "__main__":

@@ -1,13 +1,21 @@
 # %%
+import os
 import requests
 import json
+from uuid import uuid4
 from tqdm import tqdm
 from pathlib import Path
-from sentence_transformers import SentenceTransformer
 
+from mtg.util import load_config
 from mtg.logging import get_logger
-from mtg.vector_db import VectorDB
 from mtg.objects import Card, Document
+from mtg.etl.cards.categorizer import create_categorizer
+from mtg.chroma import ChromaDocument
+
+from mtg.util import load_config
+from mtg.chroma.config import ChromaConfig
+from mtg.chroma.chroma_db import ChromaDB, CollectionType
+
 
 BLOCKED_CARD_TYPES = ["Card", "Stickers", "Hero"]
 NORMAL_CARD_TYPES = [
@@ -25,6 +33,12 @@ NORMAL_CARD_TYPES = [
 DOUBLE_FACED = ["transform", "card_faces", "flip", "split"]
 
 logger = get_logger()
+
+
+def batch(iterable, batch_size=1):
+    length = len(iterable)
+    for idx in range(0, length, batch_size):
+        yield iterable[idx : min(idx + batch_size, length)]
 
 
 def download_card_data(
@@ -56,7 +70,7 @@ def download_card_data(
         card_data["oracle_id"]: card_data for card_data in oracle_card_data
     }
 
-    for ruling in tqdm(rulings_data):
+    for ruling in tqdm(rulings_data, desc="adding rulings to cards"):
         oracle_id = ruling["oracle_id"]
         if "rulings" not in idx_2_card_data[oracle_id]:
             idx_2_card_data[oracle_id]["rulings"] = []
@@ -103,7 +117,7 @@ def parse_card_data(data: list[dict], keywords: list[str]) -> list[Card]:
         if card_data.get("layout") in NORMAL_CARD_TYPES:
             cards.append(
                 Card(
-                    _id=card_data.get("id"),
+                    id=card_data.get("id"),
                     name=card_data.get("name"),
                     mana_cost=card_data.get("mana_cost"),
                     type=card_data.get("type_line"),
@@ -119,10 +133,10 @@ def parse_card_data(data: list[dict], keywords: list[str]) -> list[Card]:
                 )
             )
         elif card_data.get("layout") in DOUBLE_FACED:
-            for card_face in card_data.get("card_faces"):
+            for face_num, card_face in enumerate(card_data.get("card_faces")):
                 cards.append(
                     Card(
-                        _id=card_data.get("id"),
+                        id=card_data.get("id") + f"_{face_num}",
                         name=card_face.get("name"),
                         mana_cost=card_face.get("mana_cost"),
                         type=card_face.get("type_line"),
@@ -142,63 +156,87 @@ def parse_card_data(data: list[dict], keywords: list[str]) -> list[Card]:
     return cards
 
 
-def create_card_db(cards: list[Card], model: SentenceTransformer) -> VectorDB:
-    texts, cards_in_db = [], []
-    for card in cards:
-        texts.append(card.to_text(include_price=False))
-        cards_in_db.append(card)
-
-        texts.append(card.name)
-        cards_in_db.append(card)
-
-    logger.info(f"creating vector db with {len(cards)} cards")
-    card_db = VectorDB(
-        texts=texts,
-        data=cards_in_db,
-        model=model,
-    )
-    return card_db
-
-
 if __name__ == "__main__":
     # create variables
-    db_name = "card_db_gte"
-    UPDATE_DATABASE = False
+
+    config = load_config("../configs/config.yaml")
+    os.environ["OPENAI_API_KEY"] = config.get("open_ai_token")
+
     DATA_PATH = Path("../data")
-    ARTIFACT_PATH = DATA_PATH / "artifacts"
     ALL_CARDS_FILE = DATA_PATH / "etl/raw/cards/scryfall_all_cards_with_rulings.json"
     KEYWORD_FILE = DATA_PATH / "etl/raw/documents/keyword_list.json"
+    OUTPUT_PATH = DATA_PATH / "etl/processed/cards/"
 
-    # load card data
+    ##################################
+    # 1. Extract: download card data #
+    ##################################
+
+    logger.info("starting extract")
     data = download_card_data()
     # save data
     with ALL_CARDS_FILE.open("w", encoding="utf-8") as outfile:
         json.dump(data, outfile, ensure_ascii=False)
 
-    # load model
-    model = SentenceTransformer("../data/models/gte-large")
-    logger.info(f"loaded sentence transformer on device: {model.device}")
-
-    # load data
+    ###################################
+    # 2. Transform: process card data #
+    ###################################
+    logger.info("starting transform")
     with ALL_CARDS_FILE.open("r", encoding="utf-8") as infile:
         data = json.load(infile)
     with KEYWORD_FILE.open("r", encoding="utf-8") as infile:
         keywords = json.load(infile)
 
+    processed_card_ids = set([file.stem for file in OUTPUT_PATH.iterdir()])
+
     cards = parse_card_data(data=data, keywords=keywords)
+    new_cards = [card for card in cards if card.id not in processed_card_ids]
+    # chat = create_categorizer("gpt-4o")
+    for card in tqdm(new_cards, desc="Transforming cards"):
+        """
+        response = chat.invoke({"card_text": card.to_text()})
 
-    # if update:
-    if UPDATE_DATABASE:
-        card_db = VectorDB.load(ARTIFACT_PATH / f"{db_name}.p")
-        card_names_vectorized = [c.name for c in card_db.ids_2_data.values()]
-        cards_new = [c for c in cards if c.name not in card_names_vectorized]
-        embeddings_and_data = card_db.get_embeddings(
-            [card.to_text(include_price=False) for card in cards_new], cards_new, model
+        categories = json.loads(
+            response.additional_kwargs["function_call"]["arguments"]
         )
-        card_db.add(embeddings_and_data)
-    else:
-        card_db = create_card_db(cards, model)
+        categories = [k for k, v in categories.items() if v]
+        card.categories = categories
+        """
 
-    # save
-    card_db.dump(ARTIFACT_PATH / f"{db_name}.p")
-    logger.info(f"created card db with {len(cards)} cards")
+        card_data = card.to_dict()
+        with open(OUTPUT_PATH / f"{card.id}.json", "w", encoding="utf-8") as outfile:
+            json.dump(card_data, outfile, ensure_ascii=False)
+
+    ######################################
+    # 3. Load: add to Chroma Collection ##
+    ######################################
+    logger.info("starting load")
+    config = load_config("configs/config.yaml")
+
+    chroma_config = ChromaConfig(**config["CHROMA"])
+    db = ChromaDB(chroma_config)
+
+    batch_size = 100
+    batches = batch(cards, batch_size)
+    for mini_batch in tqdm(
+        batches, desc="uploading documents", total=len(cards) // batch_size
+    ):
+
+        documents = []
+        for card in mini_batch:
+
+            text = f"""
+            {card.name}
+            {card.type}
+            {card.oracle}
+            """
+            documents.append(
+                ChromaDocument(
+                    id=str(uuid4()),
+                    document=text,
+                    metadata=card.to_chroma(),
+                )
+            )
+
+        db.upsert_documents_to_collection(
+            documents=documents, collection_type=CollectionType.CARDS
+        )

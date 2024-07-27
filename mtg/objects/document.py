@@ -13,3 +13,6 @@ class Document(BaseModel):
 
     def __repr__(self):
         return f"Document({self.name})"
+
+    def to_chroma(self):
+        return {"name": self.name, "origin": self.metadata.get("origin", None)}
