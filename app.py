@@ -23,7 +23,7 @@ documents_collection = db.get_collection(CollectionType.DOCUMENTS)
 
 # load card data
 # TODO -> make class CardDB and load from config
-cards_folder = Path("../data/etl/processed/cards")
+cards_folder = Path(config.get("cards_folder", "../data/etl/processed/cards"))
 data = []
 for file in cards_folder.iterdir():
     data.append(read_json_file(file))
@@ -47,7 +47,7 @@ logging.info(f"loaded {len(cards)} cards")
 
 
 # load rules data
-docs_folder = Path("../data/etl/processed/documents")
+docs_folder = Path(config.get("documents_folder", "../data/etl/processed/documents"))
 documents = []
 for file in docs_folder.iterdir():
     data = read_json_file(file)
