@@ -43,6 +43,8 @@ for card in data:
 all_keywords = list(all_keywords)
 all_legalities = list(all_legalities)
 all_color_identities = {"W", "U", "B", "R", "G"}
+logging.info(f"loaded {len(cards)} cards")
+
 
 # load rules data
 docs_folder = Path("../data/etl/processed/documents")
@@ -52,6 +54,7 @@ for file in docs_folder.iterdir():
     for doc in data:
         documents.append(Document(**doc))
 document_name_2_document = {doc.name: doc for doc in documents}
+logging.info(f"loaded {len(documents)} documents")
 
 # app
 app = FastAPI()
