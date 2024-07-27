@@ -8,5 +8,5 @@ CHROMA:
   collection_name_documents: "documents"
   collection_name_cards: "cards"
 
-cards_folder: "data/etl/processed/cards"
-documents_folder: "data/etl/processed/documents"
+cards_folder: "../data/etl/processed/cards"
+documents_folder: "../data/etl/processed/documents"
