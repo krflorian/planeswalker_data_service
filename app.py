@@ -30,6 +30,7 @@ for file in cards_folder.iterdir():
 
 cards = [Card(**d) for d in data]
 card_name_2_card = {card.name: card for card in cards}
+all_card_names = list(card_name_2_card)
 
 all_keywords, all_legalities = set(), set()
 
@@ -79,7 +80,7 @@ class CardsRequest(BaseModel):
     keywords: list[str] = Field(default_factory=list)
     color_identity: list[str] = Field(default_factory=list)
     legality: Optional[str] = Field(default=None)
-    k: int = Field(default=10)
+    k: int = Field(default=20)
     threshold: float = Field(default=0.4)
 
 
@@ -105,11 +106,16 @@ class CardParseResponse(BaseModel):
 async def search_card(card_name: str) -> GetCardsResponse:
 
     card = card_name_2_card.get(card_name, None)
+    if card is None:
+        card_names = difflib.get_close_matches(card_name, all_card_names, n=1)
+        card = card_name_2_card.get(card_names[0], None)
+    if card is None:
+        raise ValueError(f"Card Name not found - {card_name}")
     return GetCardsResponse(card=card, distance=0.0)
 
 
 @app.post("/parse_card_urls/")
-async def get_cards(request: CardParseRequest) -> CardParseResponse:
+async def parse_cards(request: CardParseRequest) -> CardParseResponse:
 
     text = parse_card_names(request.text, card_name_2_card=card_name_2_card)
     return CardParseResponse(text=text)

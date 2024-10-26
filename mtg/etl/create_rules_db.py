@@ -8,7 +8,6 @@ from mtg.etl.extractors import (
     StackExchangeExtractor,
     WikipediaExtractor,
 )
-from mtg.etl.loaders import DocumentLoader
 
 logger = get_logger()
 

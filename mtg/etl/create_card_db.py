@@ -215,10 +215,16 @@ if __name__ == "__main__":
     chroma_config = ChromaConfig(**config["CHROMA"])
     db = ChromaDB(chroma_config)
 
+    # search cards in db
+    collection = db.get_collection(CollectionType.CARDS)
+    documents = collection.get()
+    cards_in_db = set([doc["name"] for doc in documents["metadatas"]])
+    new_cards = [card for card in cards if card.name not in cards_in_db]
+
     batch_size = 100
-    batches = batch(cards, batch_size)
+    batches = batch(new_cards, batch_size)
     for mini_batch in tqdm(
-        batches, desc="uploading documents", total=len(cards) // batch_size
+        batches, desc="uploading documents", total=len(new_cards) // batch_size
     ):
 
         documents = []
