@@ -10,7 +10,8 @@ from datetime import datetime
 from mtg.util import load_config
 from mtg.logging import get_logger
 from mtg.objects import Card, Document
-from mtg.etl.cards.categorizer import create_categorizer
+
+# from mtg.etl.cards.categorizer import create_categorizer
 from mtg.chroma import ChromaDocument
 
 from mtg.util import load_config
