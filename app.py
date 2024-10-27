@@ -3,6 +3,7 @@ import uvicorn
 from pathlib import Path
 from typing import Optional
 import difflib
+from datetime import datetime
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -12,6 +13,7 @@ from mtg.chroma.config import ChromaConfig
 from mtg.chroma.chroma_db import ChromaDB, CollectionType
 from mtg.util import load_config, read_json_file
 from mtg.url_parsing import parse_card_names
+from mtg.etl.create_card_db import update_cards
 
 config: dict = load_config(Path("configs/config.yaml"))
 chroma_config = ChromaConfig(**config["CHROMA"])
@@ -101,6 +103,12 @@ class CardParseResponse(BaseModel):
     text: str
 
 
+class DBInfo(BaseModel):
+    last_updated: datetime
+    number_of_cards: int
+    number_of_documents: int
+
+
 # Routes
 @app.get("/card_name/{card_name}")
 async def search_card(card_name: str) -> GetCardsResponse:
@@ -112,6 +120,37 @@ async def search_card(card_name: str) -> GetCardsResponse:
     if card is None:
         raise ValueError(f"Card Name not found - {card_name}")
     return GetCardsResponse(card=card, distance=0.0)
+
+
+@app.get("/info")
+async def db_info() -> DBInfo:
+    """Get info from the Database"""
+
+    last_updated = cards_collection.metadata["last_updated"]
+    number_of_cards = cards_collection.count()
+    number_of_documents = documents_collection.count()
+
+    return DBInfo(
+        last_updated=last_updated,
+        number_of_cards=number_of_cards,
+        number_of_documents=number_of_documents,
+    )
+
+
+@app.get("/update_cards")
+async def update_card_db() -> int:
+    all_cards_file = config.get("all_cards_file")
+    all_keywords_file = config.get("all_keywords_file")
+    processed_cards_folder = config.get("cards_folder")
+
+    num_new_cards = update_cards(
+        all_cards_file=Path(all_cards_file),
+        all_keywords_file=Path(all_keywords_file),
+        processed_cards_folder=Path(processed_cards_folder),
+        db=db,
+    )
+
+    return num_new_cards
 
 
 @app.post("/parse_card_urls/")

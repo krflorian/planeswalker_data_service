@@ -7,7 +7,7 @@ The Service uses FASTAPI and HNSWLIB to query cards data and rules regarding `Ma
 
 1.  Start the Server 
 ```shell 
-uvicorn app:app
+fastapi run app.py
 ```
 
 2. Look at the Interfaces and Try out the Service  

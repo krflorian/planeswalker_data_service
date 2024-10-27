@@ -5,6 +5,7 @@ import json
 from uuid import uuid4
 from tqdm import tqdm
 from pathlib import Path
+from datetime import datetime
 
 from mtg.util import load_config
 from mtg.logging import get_logger
@@ -156,16 +157,12 @@ def parse_card_data(data: list[dict], keywords: list[str]) -> list[Card]:
     return cards
 
 
-if __name__ == "__main__":
-    # create variables
-
-    config = load_config("../configs/config.yaml")
-    os.environ["OPENAI_API_KEY"] = config.get("open_ai_token")
-
-    DATA_PATH = Path("../data")
-    ALL_CARDS_FILE = DATA_PATH / "etl/raw/cards/scryfall_all_cards_with_rulings.json"
-    KEYWORD_FILE = DATA_PATH / "etl/raw/documents/keyword_list.json"
-    OUTPUT_PATH = DATA_PATH / "etl/processed/cards/"
+def update_cards(
+    all_cards_file: Path,
+    all_keywords_file: Path,
+    processed_cards_folder: Path,
+    db: ChromaDB,
+) -> bool:
 
     ##################################
     # 1. Extract: download card data #
@@ -174,19 +171,17 @@ if __name__ == "__main__":
     logger.info("starting extract")
     data = download_card_data()
     # save data
-    with ALL_CARDS_FILE.open("w", encoding="utf-8") as outfile:
+    with all_cards_file.open("w", encoding="utf-8") as outfile:
         json.dump(data, outfile, ensure_ascii=False)
 
     ###################################
     # 2. Transform: process card data #
     ###################################
     logger.info("starting transform")
-    with ALL_CARDS_FILE.open("r", encoding="utf-8") as infile:
-        data = json.load(infile)
-    with KEYWORD_FILE.open("r", encoding="utf-8") as infile:
+    with all_keywords_file.open("r", encoding="utf-8") as infile:
         keywords = json.load(infile)
 
-    processed_card_ids = set([file.stem for file in OUTPUT_PATH.iterdir()])
+    processed_card_ids = set([file.stem for file in processed_cards_folder.iterdir()])
 
     cards = parse_card_data(data=data, keywords=keywords)
     new_cards = [card for card in cards if card.id not in processed_card_ids]
@@ -203,17 +198,15 @@ if __name__ == "__main__":
         """
 
         card_data = card.to_dict()
-        with open(OUTPUT_PATH / f"{card.id}.json", "w", encoding="utf-8") as outfile:
+        with open(
+            processed_cards_folder / f"{card.id}.json", "w", encoding="utf-8"
+        ) as outfile:
             json.dump(card_data, outfile, ensure_ascii=False)
 
     ######################################
     # 3. Load: add to Chroma Collection ##
     ######################################
     logger.info("starting load")
-    config = load_config("configs/config.yaml")
-
-    chroma_config = ChromaConfig(**config["CHROMA"])
-    db = ChromaDB(chroma_config)
 
     # search cards in db
     collection = db.get_collection(CollectionType.CARDS)
@@ -246,3 +239,28 @@ if __name__ == "__main__":
         db.upsert_documents_to_collection(
             documents=documents, collection_type=CollectionType.CARDS
         )
+
+    collection.modify(metadata={"last_updated": str(datetime.now())})
+    return len(new_cards)
+
+
+if __name__ == "__main__":
+    # create variables
+
+    config = load_config("../configs/config.yaml")
+    os.environ["OPENAI_API_KEY"] = config.get("open_ai_token")
+
+    DATA_PATH = Path("../data")
+    ALL_CARDS_FILE = DATA_PATH / "etl/raw/cards/scryfall_all_cards_with_rulings.json"
+    KEYWORD_FILE = DATA_PATH / "etl/raw/documents/keyword_list.json"
+    OUTPUT_PATH = DATA_PATH / "etl/processed/cards/"
+
+    chroma_config = ChromaConfig(**config["CHROMA"])
+    db = ChromaDB(chroma_config)
+
+    num_new_cards = update_cards(
+        all_cards_file=ALL_CARDS_FILE,
+        all_keywords_file=KEYWORD_FILE,
+        processed_cards_folder=OUTPUT_PATH,
+        db=db,
+    )

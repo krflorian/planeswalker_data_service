@@ -10,3 +10,5 @@ CHROMA:
 
 cards_folder: "../data/etl/processed/cards"
 documents_folder: "../data/etl/processed/documents"
+all_cards_file: "../data/etl/raw/cards/scryfall_all_cards_with_rulings.json"
+all_keywords_file: "../data/etl/raw/documents/keyword_list.json"
