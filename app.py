@@ -19,34 +19,41 @@ config: dict = load_config(Path("configs/config.yaml"))
 chroma_config = ChromaConfig(**config["CHROMA"])
 db = ChromaDB(chroma_config)
 
-cards_collection = db.get_collection(CollectionType.CARDS)
-documents_collection = db.get_collection(CollectionType.DOCUMENTS)
+# cards_collection = db.get_collection(CollectionType.CARDS)
+# documents_collection = db.get_collection(CollectionType.DOCUMENTS)
 
 
 # load card data
 # TODO -> make class CardDB and load from config
 cards_folder = Path(config.get("cards_folder", "../data/etl/processed/cards"))
-data = []
-for file in cards_folder.iterdir():
-    data.append(read_json_file(file))
 
-cards = [Card(**d) for d in data]
-card_name_2_card = {card.name: card for card in cards}
-all_card_names = list(card_name_2_card)
 
-all_keywords, all_legalities = set(), set()
+def load_cards(cards_folder: Path) -> tuple[dict, dict]:
+    data = []
+    for file in cards_folder.iterdir():
+        data.append(read_json_file(file))
 
-for card in data:
-    for keyword in card["keywords"]:
-        all_keywords.add(keyword)
-    for legality in card["legalities"]:
-        if card["legalities"][legality] == "legal":
-            all_legalities.add(legality)
+    cards = [Card(**d) for d in data]
+    card_name_2_card = {card.name: card for card in cards}
+    all_card_names = list(card_name_2_card)
 
-all_keywords = list(all_keywords)
-all_legalities = list(all_legalities)
+    all_keywords, all_legalities = set(), set()
+
+    for card in data:
+        for keyword in card["keywords"]:
+            all_keywords.add(keyword)
+        for legality in card["legalities"]:
+            if card["legalities"][legality] == "legal":
+                all_legalities.add(legality)
+    return all_card_names, card_name_2_card, list(all_keywords), list(all_legalities)
+
+
+all_card_names, card_name_2_card, all_keywords, all_legalities = load_cards(
+    cards_folder=cards_folder
+)
+
 all_color_identities = {"W", "U", "B", "R", "G"}
-logging.info(f"loaded {len(cards)} cards")
+logging.info(f"loaded {len(all_card_names)} cards")
 
 
 # load rules data
@@ -61,6 +68,15 @@ logging.info(f"loaded {len(documents)} documents")
 
 # app
 app = FastAPI()
+
+# setting global variables
+app.db = db
+app.all_card_names = all_card_names
+app.card_name_2_card = card_name_2_card
+app.document_name_2_document = document_name_2_document
+app.all_keywords = all_keywords
+app.all_legalities = all_legalities
+app.all_color_identities = all_color_identities
 
 
 # Interface
@@ -113,10 +129,10 @@ class DBInfo(BaseModel):
 @app.get("/card_name/{card_name}")
 async def search_card(card_name: str) -> GetCardsResponse:
 
-    card = card_name_2_card.get(card_name, None)
+    card = app.card_name_2_card.get(card_name, None)
     if card is None:
-        card_names = difflib.get_close_matches(card_name, all_card_names, n=1)
-        card = card_name_2_card.get(card_names[0], None)
+        card_names = difflib.get_close_matches(card_name, app.all_card_names, n=1)
+        card = app.card_name_2_card.get(card_names[0], None)
     if card is None:
         raise ValueError(f"Card Name not found - {card_name}")
     return GetCardsResponse(card=card, distance=0.0)
@@ -125,6 +141,9 @@ async def search_card(card_name: str) -> GetCardsResponse:
 @app.get("/info")
 async def db_info() -> DBInfo:
     """Get info from the Database"""
+
+    cards_collection = db.get_collection(CollectionType.CARDS)
+    documents_collection = db.get_collection(CollectionType.DOCUMENTS)
 
     last_updated = cards_collection.metadata["last_updated"]
     number_of_cards = cards_collection.count()
@@ -147,8 +166,16 @@ async def update_card_db() -> int:
         all_cards_file=Path(all_cards_file),
         all_keywords_file=Path(all_keywords_file),
         processed_cards_folder=Path(processed_cards_folder),
-        db=db,
+        db=app.db,
     )
+
+    all_card_names, card_name_2_card, all_keywords, all_legalities = load_cards(
+        cards_folder=cards_folder
+    )
+    app.all_card_names = all_card_names
+    app.card_name_2_card = card_name_2_card
+    app.all_keywords = all_keywords
+    app.all_legalities = all_legalities
 
     return num_new_cards
 
@@ -156,7 +183,7 @@ async def update_card_db() -> int:
 @app.post("/parse_card_urls/")
 async def parse_cards(request: CardParseRequest) -> CardParseResponse:
 
-    text = parse_card_names(request.text, card_name_2_card=card_name_2_card)
+    text = parse_card_names(request.text, card_name_2_card=app.card_name_2_card)
     return CardParseResponse(text=text)
 
 
@@ -169,7 +196,7 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
 
     # keywords
     for search_term in request.keywords:
-        matches = difflib.get_close_matches(search_term, all_keywords, n=1)
+        matches = difflib.get_close_matches(search_term, app.all_keywords, n=1)
         if matches:
             query["where"][f"keyword_{matches[0]}"] = True
         else:
@@ -177,7 +204,7 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
 
     # legalities
     if request.legality is not None:
-        matches = difflib.get_close_matches(request.legality, all_legalities, n=1)
+        matches = difflib.get_close_matches(request.legality, app.all_legalities, n=1)
         if matches:
             query["where"][f"{matches[0]}_legal"] = True
         else:
@@ -185,7 +212,7 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
 
     # color identity
     for color in request.color_identity:
-        if color.upper() in all_color_identities:
+        if color.upper() in app.all_color_identities:
             query["where"][f"color_identity_{color.upper()}"] = True
 
     if len(query["where"]) > 1:
@@ -194,6 +221,7 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
         }
 
     # query
+    cards_collection = db.get_collection(CollectionType.CARDS)
     results = cards_collection.query(**query)
 
     response = []
@@ -201,7 +229,8 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
         if distance <= request.threshold:
             response.append(
                 GetCardsResponse(
-                    card=card_name_2_card.get(metadata["name"], None), distance=distance
+                    card=app.card_name_2_card.get(metadata["name"], None),
+                    distance=distance,
                 )
             )
 
@@ -212,6 +241,7 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
 async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
 
     query = {"query_texts": [request.text], "n_results": request.k}
+    documents_collection = db.get_collection(CollectionType.DOCUMENTS)
     results = documents_collection.query(**query)
 
     response = []
@@ -219,7 +249,7 @@ async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
         if distance <= request.threshold:
             response.append(
                 GetRulesResponse(
-                    document=document_name_2_document.get(metadata["name"], None),
+                    document=app.document_name_2_document.get(metadata["name"], None),
                     distance=distance,
                 )
             )
