@@ -3,6 +3,7 @@ import uvicorn
 from pathlib import Path
 from typing import Optional
 import difflib
+from datetime import datetime
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -102,6 +103,12 @@ class CardParseResponse(BaseModel):
     text: str
 
 
+class DBInfo(BaseModel):
+    last_updated: datetime
+    number_of_cards: int
+    number_of_documents: int
+
+
 # Routes
 @app.get("/card_name/{card_name}")
 async def search_card(card_name: str) -> GetCardsResponse:
@@ -113,6 +120,21 @@ async def search_card(card_name: str) -> GetCardsResponse:
     if card is None:
         raise ValueError(f"Card Name not found - {card_name}")
     return GetCardsResponse(card=card, distance=0.0)
+
+
+@app.get("/info")
+async def db_info() -> DBInfo:
+    """Get info from the Database"""
+
+    last_updated = cards_collection.metadata["last_updated"]
+    number_of_cards = cards_collection.count()
+    number_of_documents = documents_collection.count()
+
+    return DBInfo(
+        last_updated=last_updated,
+        number_of_cards=number_of_cards,
+        number_of_documents=number_of_documents,
+    )
 
 
 @app.get("/update_cards")
