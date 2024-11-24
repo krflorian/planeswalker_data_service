@@ -1,7 +1,8 @@
 import logging
 import time
 from enum import Enum
-from typing import List, Any
+from typing import List
+from functools import cache
 
 from chromadb import PersistentClient
 from chromadb.utils import embedding_functions
@@ -27,7 +28,7 @@ class ChromaDB:
             CollectionType.DOCUMENTS: config.collection_name_documents,
             CollectionType.CARDS: config.collection_name_cards,
         }
-        # self.client = HttpClient(self.host, self.port)
+        self.collection_type_2_collection = {}
         self.client = PersistentClient(self.host)
 
     def __repr__(self):
@@ -46,9 +47,11 @@ class ChromaDB:
             collection_type = CollectionType(collection_type)
 
         try:
-            # Create ChromaDB client
-
             # Create embedding function
+            collection = self.collection_type_2_collection.get(collection_type)
+            if collection is not None:
+                return collection
+
             ef = embedding_functions.SentenceTransformerEmbeddingFunction(
                 self.embedding_model,
                 device=self.embedding_device,
@@ -61,12 +64,14 @@ class ChromaDB:
                 embedding_function=ef,
                 metadata={"hnsw:space": "cosine"},
             )
+            self.collection_type_2_collection[collection_type] = collection
 
             logging.info(
                 f"Successfully created collection {collection_name} with {collection.count()} documents"
             )
 
             return collection
+
         except Exception as e:
             logging.error(e, exc_info=True)
             raise

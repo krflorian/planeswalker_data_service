@@ -19,10 +19,6 @@ config: dict = load_config(Path("configs/config.yaml"))
 chroma_config = ChromaConfig(**config["CHROMA"])
 db = ChromaDB(chroma_config)
 
-# cards_collection = db.get_collection(CollectionType.CARDS)
-# documents_collection = db.get_collection(CollectionType.DOCUMENTS)
-
-
 # load card data
 # TODO -> make class CardDB and load from config
 cards_folder = Path(config.get("cards_folder", "../data/etl/processed/cards"))
@@ -67,7 +63,7 @@ document_name_2_document = {doc.name: doc for doc in documents}
 logging.info(f"loaded {len(documents)} documents")
 
 # app
-app = FastAPI()
+app = FastAPI(title="Planeswalker Data Service")
 
 # setting global variables
 app.db = db
@@ -126,7 +122,7 @@ class DBInfo(BaseModel):
 
 
 # Routes
-@app.get("/card_name/{card_name}")
+@app.get("/card_name/{card_name}", tags=["Cards"])
 async def search_card(card_name: str) -> GetCardsResponse:
 
     card = app.card_name_2_card.get(card_name, None)
@@ -138,12 +134,12 @@ async def search_card(card_name: str) -> GetCardsResponse:
     return GetCardsResponse(card=card, distance=0.0)
 
 
-@app.get("/info")
+@app.get("/info", tags=["Infrastructure"])
 async def db_info() -> DBInfo:
     """Get info from the Database"""
 
-    cards_collection = db.get_collection(CollectionType.CARDS)
-    documents_collection = db.get_collection(CollectionType.DOCUMENTS)
+    cards_collection = app.db.get_collection(CollectionType.CARDS)
+    documents_collection = app.db.get_collection(CollectionType.DOCUMENTS)
 
     last_updated = cards_collection.metadata["last_updated"]
     number_of_cards = cards_collection.count()
@@ -156,7 +152,7 @@ async def db_info() -> DBInfo:
     )
 
 
-@app.get("/update_cards")
+@app.get("/update_cards", tags=["Infrastructure"])
 async def update_card_db() -> int:
     all_cards_file = config.get("all_cards_file")
     all_keywords_file = config.get("all_keywords_file")
@@ -180,14 +176,14 @@ async def update_card_db() -> int:
     return num_new_cards
 
 
-@app.post("/parse_card_urls/")
+@app.post("/parse_card_urls", tags=["Cards"])
 async def parse_cards(request: CardParseRequest) -> CardParseResponse:
 
     text = parse_card_names(request.text, card_name_2_card=app.card_name_2_card)
     return CardParseResponse(text=text)
 
 
-@app.post("/cards/")
+@app.post("/cards", tags=["Cards"])
 async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
     # TODO sampling
     # TODO code should be in class CardDB
@@ -221,7 +217,7 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
         }
 
     # query
-    cards_collection = db.get_collection(CollectionType.CARDS)
+    cards_collection = app.db.get_collection(CollectionType.CARDS)
     results = cards_collection.query(**query)
 
     response = []
@@ -237,11 +233,11 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
     return response
 
 
-@app.post("/rules/")
+@app.post("/rules", tags=["Rules"])
 async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
 
     query = {"query_texts": [request.text], "n_results": request.k}
-    documents_collection = db.get_collection(CollectionType.DOCUMENTS)
+    documents_collection = app.db.get_collection(CollectionType.DOCUMENTS)
     results = documents_collection.query(**query)
 
     response = []
