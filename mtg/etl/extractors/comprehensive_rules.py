@@ -15,9 +15,20 @@ class ComprehensiveRulesExtractor(DataExtractor):
     api_url: str = (
         "https://magic.wizards.com/en/rules"
     )
+
+    keywords_url: str = "https://api.scryfall.com/catalog/keyword-abilities"
+    keywords: list = []
+    path_data_keywords: Path = Path("../data/etl/raw/documents/keyword_list.txt")
     path_data_raw: Path = Path("../data/etl/raw/documents/rules.txt")
     path_data_processed: Path = Path("../data/etl/processed/documents/rules.json")
 
+    def get_keywords(self):
+        response = requests.get(self.keywords_url)
+        response.raise_for_status()  # Check for request errors
+        self.keywords = json.loads(response.text)['data']
+        self._to_file(path=self.path_data_keywords, data=str(self.keywords))
+        logging.info(f"{len(self.keywords)} Keywords extracted and saved to {self.path_data_keywords}")
+ 
     
     def get_cr_url(self):
         try:
@@ -42,6 +53,7 @@ class ComprehensiveRulesExtractor(DataExtractor):
 
     def extract_data(self):
         try:
+            self.get_keywords()
             cr_url = self.get_cr_url()
             response = requests.get(cr_url)
             response.raise_for_status()  # Raise an exception if the request was unsuccessful
@@ -64,8 +76,8 @@ class ComprehensiveRulesExtractor(DataExtractor):
         # split the text by the word 'Credits' and take the first part as glossary_entries
         glossary_entries = text.split("Credits", 1)[0]
 
-        with open(Path("../data/etl/raw/documents/keyword_list.json"), "r") as infile:
-            keywords = json.load(infile)
+        #with open(Path("../data/etl/raw/documents/keyword_list.json"), "r") as infile:
+        #    keywords = json.load(infile)
         # chunk rules
         rule_pattern = r"(\n\d{3}\.\d+.)"
         chapter_pattern = r"(\n\d{3}\. .*)"
@@ -114,7 +126,7 @@ class ComprehensiveRulesExtractor(DataExtractor):
                                     },
                                     keywords=[
                                         keyword
-                                        for keyword in keywords
+                                        for keyword in self.keywords
                                         if keyword.lower() in rule_text.lower()
                                     ],
                                 )
@@ -139,7 +151,7 @@ class ComprehensiveRulesExtractor(DataExtractor):
                                         },
                                         keywords=[
                                             keyword
-                                            for keyword in keywords
+                                            for keyword in self.keywords
                                             if keyword.lower() in rule_text.lower()
                                         ],
                                     )
@@ -163,7 +175,7 @@ class ComprehensiveRulesExtractor(DataExtractor):
                     },
                     keywords=[
                         keyword
-                        for keyword in keywords
+                        for keyword in self.keywords
                         if keyword.lower() in rule_text.lower()
                     ],
                 )
