@@ -4,9 +4,9 @@ from mtg.etl.extractors import ComprehensiveRulesExtractor, RulesGuruExtractor, 
 #%%
 extractors = [
     ComprehensiveRulesExtractor(),
-    RulesGuruExtractor(),
     StackExchangeExtractor(),
-    WikipediaExtractor()
+    WikipediaExtractor(),
+    RulesGuruExtractor(),
 ]
 
 for extractor in extractors:

@@ -6,10 +6,13 @@ import time
 from tqdm import tqdm
 from pydantic import Field
 from pathlib import Path
+from mtg.logging import get_logger
+
 
 from mtg.objects import Document
 from .data_extractor import DataExtractor
 
+logger = get_logger()
 
 class RulesGuruExtractor(DataExtractor):
     api_url: str = "https://rulesguru.net/api/questions/"
@@ -20,9 +23,46 @@ class RulesGuruExtractor(DataExtractor):
     path_ids: Path = Path("../data/etl/raw/documents/ids.txt")
 
     def _get_ids(self):
-        with open(self.path_ids) as f:
-            ids = f.read().splitlines()
-        self.ids = list(map(int, ids))
+        logger.info(f"fetching rulesguru ids")
+        url = "https://rulesguru.org/getQuestionsList"
+
+        # Define the JSON payload
+        payload = {
+            "settings": {
+                "level": ["0", "1", "2", "3", "Corner Case"],
+                "complexity": ["Simple", "Intermediate", "Complicated"],
+                "legality": "All of Magic",
+                "expansions": [],
+                "playableOnly": True,
+                "tags": ["Unsupported answers"],
+                "tagsConjunc": "NOT",
+                "rules": [],
+                "rulesConjunc": "OR",
+                "cards": [],
+                "cardsConjunc": "OR",
+                "cardDisplayFormat": "Image"
+            }
+        }
+
+        try:
+            # Send the POST request
+            response = requests.post(url, headers={}, json=payload)
+
+            # Check if the request was successful
+            response.raise_for_status()
+
+            # If the response contains JSON data, parse and return it
+            data = response.json()
+            return data
+
+
+        except Exception as e:
+            print(f"An error occurred: {e}")  # Other errors
+
+    #def _get_ids(self):
+    #    with open(self.path_ids) as f:
+    #        ids = f.read().splitlines()
+    #    self.ids = list(map(int, ids))
 
     def _get_query_params(self, id):
         query_params = {"id": id}
@@ -32,8 +72,29 @@ class RulesGuruExtractor(DataExtractor):
 
         return query_params
 
+    def _get_params(self, count):
+        query_params = {
+            "count": count,         
+            "level": ["0", "1", "2", "3", "Corner Case"],
+            "complexity": ["Simple", "Intermediate", "Complicated"],
+            "legality": "All of Magic",
+            "expansions": [],
+            "playableOnly": True,
+            "tags": [],
+            "tagsConjunc": "NOT",
+            "rules": [],
+            "rulesConjunc": "OR",
+            "cards": [],
+            "cardsConjunc": "OR",
+        }
+        query_params = json.dumps(query_params)
+        query_params = urllib.parse.quote(query_params, safe="")
+
+        return query_params
+
     def extract_data(self):
         self._get_ids()
+        logger.info(f"downloading {len(self.ids)}rulesguru question")
         for id in tqdm(self.ids):
             try:
                 time.sleep(2)
