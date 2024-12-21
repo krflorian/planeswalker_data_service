@@ -166,5 +166,5 @@ tryhard.py
 .vscode 
 reddit/
 rules/
-data/
+*.txt
 .vscode/

@@ -1,3 +1,4 @@
+#%%
 import requests
 import json
 import re
@@ -8,18 +9,41 @@ from datetime import datetime
 
 from mtg.objects import Document
 from .data_extractor import DataExtractor
-
+#%%
 
 class ComprehensiveRulesExtractor(DataExtractor):
     api_url: str = (
-        "https://media.wizards.com/2024/downloads/MagicCompRules%2020240206.txt"
+        "https://magic.wizards.com/en/rules"
     )
     path_data_raw: Path = Path("../data/etl/raw/documents/rules.txt")
     path_data_processed: Path = Path("../data/etl/processed/documents/rules.json")
 
+    
+    def get_cr_url(self):
+        try:
+            # Send a GET request to the URL
+            response = requests.get(self.api_url)
+            response.raise_for_status()  # Check for request errors
+
+            # Define a regex pattern to match the exact .txt file URL
+            # This pattern looks for the specific structure and filename
+            pattern = r'https://media\.wizards\.com/\d{4}/downloads/MagicCompRules\s\d{8}\.txt'
+            match = re.search(pattern, response.text)
+
+            if match:
+                return match.group(0)
+            else:
+                print("The specific .txt file link was not found on the page.")
+                return None
+
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
+            return None
+
     def extract_data(self):
         try:
-            response = requests.get(self.api_url)
+            cr_url = self.get_cr_url()
+            response = requests.get(cr_url)
             response.raise_for_status()  # Raise an exception if the request was unsuccessful
             self._to_file(self.path_data_raw, response.text)
             logging.info(
