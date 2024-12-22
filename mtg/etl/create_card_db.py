@@ -38,6 +38,7 @@ logger = get_logger()
 
 
 def batch(iterable, batch_size=1):
+    """Yield successive n-sized chunks from iterable."""
     length = len(iterable)
     for idx in range(0, length, batch_size):
         yield iterable[idx : min(idx + batch_size, length)]
@@ -46,6 +47,7 @@ def batch(iterable, batch_size=1):
 def download_card_data(
     lookup_url: str = "https://api.scryfall.com/bulk-data",
 ) -> list[dict]:
+    """Downloads card data from the Scryfall API and returns a list of card data."""
 
     # download info
     bulk_requests_info = requests.get(lookup_url)
@@ -92,6 +94,8 @@ def download_card_data(
 
 
 def parse_card_data(data: list[dict], keywords: list[str]) -> list[Card]:
+    """Parses card data and returns a list of Card objects."""
+
     cards = []
     for card_data in data:
         rules = card_data.get("rulings", [])
@@ -164,6 +168,18 @@ def update_cards(
     processed_cards_folder: Path,
     db: ChromaDB,
 ) -> bool:
+    """Updates the card database by performing the following steps:
+    1. Extract: Downloads card data and saves it to a file.
+    2. Transform: Processes the card data, categorizes new cards, and saves them to a folder.
+    3. Load: Adds new cards to the ChromaDB collection.
+    Args:
+        all_cards_file (Path): Path to the file where all card data will be saved.
+        all_keywords_file (Path): Path to the file containing keywords for processing cards.
+        processed_cards_folder (Path): Path to the folder where processed card data will be saved.
+        db (ChromaDB): Instance of the ChromaDB database.
+    Returns:
+        bool: True if new cards were added to the database, False otherwise.
+    """
 
     ##################################
     # 1. Extract: download card data #

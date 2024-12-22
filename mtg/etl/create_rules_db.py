@@ -89,7 +89,6 @@ batches = batch(documents, batch_size)
 for mini_batch in tqdm(
     batches, desc="uploading documents", total=len(documents) // batch_size
 ):
-
     documents = []
     for doc in mini_batch:
         metadata = {

@@ -5,7 +5,6 @@ from mtg.objects import Card
 
 
 def parse_card_names(text: str, card_name_2_card: dict[str, Card]) -> str:
-
     pattern = r"<<([^<>]+)>>"
     matches = re.findall(pattern, text)
 

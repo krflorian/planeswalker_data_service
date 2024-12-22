@@ -31,7 +31,6 @@ class StackExchangeExtractor(DataExtractor):
     ]
 
     def extract_data(self) -> None:
-
         api = StackAPI(self.api_url)
         api.page_size = self.page_size
         api.max_pages = 1
@@ -91,7 +90,6 @@ class StackExchangeExtractor(DataExtractor):
             json.dump(processed_documents, outfile, ensure_ascii=False)
 
     def transform_data(self) -> None:
-
         if not self.data_raw:
             self.data_raw = self._from_file(self.path_data_raw)
 

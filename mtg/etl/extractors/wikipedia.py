@@ -33,7 +33,6 @@ class WikipediaExtractor(DataExtractor):
         )
 
     def transform_data(self) -> None:
-
         if not self.data_raw:
             self.data_raw = self._from_file(self.path_data_raw)
 

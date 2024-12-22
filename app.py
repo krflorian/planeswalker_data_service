@@ -126,7 +126,6 @@ class DBInfo(BaseModel):
 # Routes
 @app.get("/card_name/{card_name}", tags=["Cards"])
 async def search_card(card_name: str) -> GetCardsResponse:
-
     card = app.card_name_2_card.get(card_name, None)
     if card is None:
         card_names = difflib.get_close_matches(card_name, app.all_card_names, n=1)
@@ -180,7 +179,6 @@ async def update_card_db() -> int:
 
 @app.post("/parse_card_urls", tags=["Cards"])
 async def parse_cards(request: CardParseRequest) -> CardParseResponse:
-
     text = parse_card_names(request.text, card_name_2_card=app.card_name_2_card)
     return CardParseResponse(text=text)
 
@@ -241,7 +239,6 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
     else:
         del query["where"]
 
-    print("query", query)
     # query
     cards_collection = app.db.get_collection(CollectionType.CARDS)
     results = cards_collection.query(**query)
@@ -261,7 +258,6 @@ async def get_cards(request: CardsRequest) -> list[GetCardsResponse]:
 
 @app.post("/rules", tags=["Rules"])
 async def get_rules(request: RulesRequest) -> list[GetRulesResponse]:
-
     query = {"query_texts": [request.text], "n_results": request.k}
     documents_collection = app.db.get_collection(CollectionType.DOCUMENTS)
     results = documents_collection.query(**query)

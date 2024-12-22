@@ -18,7 +18,6 @@ class CollectionType(Enum):
 
 
 class ChromaDB:
-
     def __init__(self, config: ChromaConfig):
         self.host = config.host
         self.port = config.port
@@ -162,7 +161,6 @@ class ChromaDB:
             raise
 
     def delete_collection(self, collection_type: CollectionType):
-
         collection_name = self.collection_2_name.get(collection_type)
         result = self.client.delete_collection(collection_name)
         return result
